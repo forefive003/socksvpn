@@ -1,0 +1,51 @@
+"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" --show-app-list --proxy-server="SOCKS5://192.168.0.106:22222"
+
+
+1. socks5客户端执行方式:
+sock_local -l remote_ip -p remote_port -s listen_port -m xor|rc4 -e key  -f forward_server_ip -k forwar_server_port
+remote_ip: socks5服务器IP
+remote_port: socks5服务器端口
+listen_port: 本地监听端口
+forward_server_ip: 转发服务器IP
+forward_server_port: 转发服务器端口
+-m 加密方式
+-e 加密密钥
+
+
+
+2. socks5服务器执行方式:
+sock_server -p server_port -m xor|rc4 -e key -f forward_server_ip -k forwar_server_port
+server_port: 代理端口
+-m 加密方式
+-e 加密密钥
+forward_server_ip: 转发服务器IP
+forward_server_port: 转发服务器端口
+
+
+3. 转发服务器执行方式:
+sock_forward -s server_port -c client_port
+server_port: 监听socks5服务器的端口
+client_port: 监听socks5客户端的端口
+
+
+
+
+socks5服务器：
+1. socks5代理服务器与转发服务器建立长连接；
+2. 定时向转发服务器发送保活消息, 包括本地IP/监听端口、用户名/密码、认证方式/密钥；
+3. 接受来自转发服务器的数据，发送给真实服务器；
+4. 接受来自真实服务器的数据，发送给转发服务器。
+5. 客户端的用户名/密码认证;
+6. 数据的加解密和解码
+
+
+转发服务器:
+1. 接受服务器的连接；
+2. 把所有代理服务器信息存在本地redis上；
+3. 接受客户端的连接；
+4. 接受客户端的数据，转发给代理服务器;
+5. 接受代理服务器的数据，转发给客户端；
+
+不需要数据加解密, 需要数据的解码
+
+有可能多个socks5服务器来自同一个公网,转发服务器通过账号来管理和区分.
