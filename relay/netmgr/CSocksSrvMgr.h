@@ -24,8 +24,10 @@ public:
     void lock();
     void unlock();
     void print_statistic(FILE *pFd);
+    #if 0
     int output_socks_server(char *resp_buf, int buf_len);
-
+    #endif
+    
 private:
     MUTEX_TYPE m_obj_lock;
     RSOCKS_LIST m_rsocks_objs;

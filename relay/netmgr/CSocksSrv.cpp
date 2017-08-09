@@ -306,24 +306,11 @@ void CSocksSrv::free_handle()
     delete this;
 }
 
-void CSocksSrv::set_user_passwd(const char *username, const char *passwd)
+void CSocksSrv::set_config(CServerCfg *srvCfg)
 {
-    memset(m_username, 0, sizeof(m_username));
-    strncpy(m_username, username, MAX_USERNAME_LEN);
+    m_srvCfg = *srvCfg;
 
-    memset(m_passwd, 0, sizeof(m_passwd));
-    strncpy(m_passwd, passwd, MAX_PASSWD_LEN);
-
-    _LOG_INFO("set usrname for socks-server(%s:%u/%s:%u), username %s, passwd %s", 
-        m_ipstr, m_port, m_inner_ipstr, m_inner_port,
-        m_username, m_passwd);
-}
-
-void CSocksSrv::set_enabled(bool enabled)
-{
-    m_enabled = enabled;
-    _LOG_INFO("%s socks-server(%s:%u/%s:%u)", 
-        enabled ? "enable" : "disable",
+    _LOG_INFO("set config for socks-server(%s:%u/%s:%u)", 
         m_ipstr, m_port, m_inner_ipstr, m_inner_port);
 }
 
@@ -365,11 +352,18 @@ BOOL CSocksSrv::is_self(const char* pub_ipstr, const char* inner_ipstr)
 
 BOOL CSocksSrv::is_self(uint32_t pub_ipaddr, char *username)
 {
-    if( (pub_ipaddr == m_ipaddr) && (0 == strncmp(m_username, username, MAX_USERNAME_LEN)))
+    if (pub_ipaddr != m_ipaddr)
     {
-        return TRUE;
+        return FALSE;
     }
 
+    for (int ii = 0; ii < m_srvCfg.m_acct_cnt; ii++)
+    {
+        if ( 0 == strncmp(m_srvCfg.m_acct_infos[ii].username, username, MAX_USERNAME_LEN))
+        {
+            return TRUE;
+        }
+    }
     return FALSE;
 }
 
@@ -414,18 +408,3 @@ void CSocksSrv::print_statistic(FILE *pFd)
 #endif
 }
 
-/*{"pub-ip":"202.1.1.1", "pri-ip":"192.168.1.1", "username":"hahaha", "passwd":"xxxx", "enabled":1}*/
-int CSocksSrv::output_self(char *resp_buf, int buf_len)
-{
-    int ret = 0;
-
-    ret = snprintf(resp_buf, buf_len, 
-            "{\"pub-ip\":\"%s\",\"pri-ip\":\"%s\",\"username\":\"%s\",\"passwd\":\"%s\",\"enabled\":%d}",
-            m_ipstr, m_inner_ipstr, m_username, m_passwd, m_enabled);
-    if (ret > (buf_len - 1))
-    {
-        return -1;
-    }
-
-    return ret;
-}

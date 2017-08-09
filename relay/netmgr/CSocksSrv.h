@@ -18,10 +18,6 @@ public:
         m_update_time = 0;
         m_inner_ipaddr = 0;
 
-        m_enabled = false;
-        memset(m_username, 0, sizeof(m_username));
-        memset(m_passwd, 0, sizeof(m_passwd));
-
         m_client_cnt = 0;
         m_send_client_close_cnt = 0;
         m_send_client_connect_cnt = 0;
@@ -38,8 +34,7 @@ public:
     }
 
 public:
-    void set_user_passwd(const char *username, const char *passwd);
-    void set_enabled(bool enabled);
+    void set_config(CServerCfg *srvCfg);
 
     void add_client();
     void del_client();
@@ -49,8 +44,6 @@ public:
     BOOL is_self(const char* pub_ipstr, const char* inner_ipstr);
     
     void print_statistic(FILE *pFd);
-    int output_self(char *resp_buf, int buf_len);
-
     void set_inner_info(uint32_t inner_ipaddr, uint16_t inner_port);
     
 private:
@@ -75,9 +68,7 @@ private:
 private:
 	uint64_t m_update_time;
 
-    char m_username[MAX_USERNAME_LEN + 1];
-    char m_passwd[MAX_PASSWD_LEN + 1];
-    bool m_enabled;
+    CServerCfg m_srvCfg;
 
 public:
     uint32_t m_client_cnt;

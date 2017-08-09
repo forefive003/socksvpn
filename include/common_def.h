@@ -1,6 +1,8 @@
 #ifndef _COMMON_DEF_H
 #define _COMMON_DEF_H
 
+#define MAX_SN_LEN  32
+
 #define MAX_USERNAME_LEN 64
 #define MAX_PASSWD_LEN 64
 

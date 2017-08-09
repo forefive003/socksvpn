@@ -24,6 +24,10 @@ uint16_t g_client_port = DEF_RELAY_CLI_PORT;
 uint16_t g_server_port = DEF_RELAY_SRV_PORT;
 uint16_t g_config_port = DEF_CONFIG_SRV_PORT;
 
+char g_relaysn[MAX_SN_LEN] = {0};
+char g_relay_passwd[MAX_PASSWD_LEN] = {0};
+char g_relay_url[MAX_URL_LEN] = {0};
+
 static BOOL g_exit = false;
 
 static void Usage(char *program)
@@ -31,10 +35,13 @@ static void Usage(char *program)
     printf("Usage: params of %s \n", program);
     printf("%-8s -c <the listen port that client connect to>\n", "");
     printf("%-8s -s <the listen port that server connect to>\n", "");
+    printf("%-8s -a <the url of manager plain, for example: http://www.domain.com/api>\n", "");
+    printf("%-8s -n <the sn of relay server, max 32 bytes len, for example: AABBCCDD002233bb>\n", "");
+    printf("%-8s -w <the passwd of relay server, max 32 bytes len, for example: abc123>\n", "");
 }
 
 /*
-socks_relay -l local_port -r remote_port 
+socks_relay -c local_port -s remote_port -a urlapi -n SN_NO -w passwd
     local_port: 监听客户端的端口
     remote_port: 监听远端的端口
     默认local_port 22223, 默认remote_port 22225
@@ -43,7 +50,7 @@ static int cmd_parser(int argc, char *argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "c:s:h")) != -1) {
+    while ((opt = getopt(argc, argv, "c:s:a:n:w:h")) != -1) {
         switch (opt) {
         case 'c':
             g_client_port = atoi(optarg);
@@ -53,6 +60,19 @@ static int cmd_parser(int argc, char *argv[])
             g_server_port = atoi(optarg);
             printf("get option: listen port that server connect to is %u\n", g_server_port);
             break;
+        case 'a':
+            strncpy(g_relay_url, optarg, MAX_URL_LEN-1);
+            printf("get option: URL is %s\n", g_relay_url);
+            break;
+        case 'n':
+            strncpy(g_relaysn, optarg, MAX_SN_LEN-1);
+            printf("get option: relaySN is %s\n", g_relaysn);
+            break;
+        case 'w':
+            strncpy(g_relay_passwd, optarg, MAX_PASSWD_LEN-1);
+            printf("get option: relayPasswd is %s\n", g_relay_passwd);
+            break;
+
         case 'h':
             Usage(argv[0]);
             return 0;

@@ -138,6 +138,7 @@ void CSocksSrvMgr::print_statistic(FILE *pFd)
     return;   
 }
 
+#if 0
 /*
 [
 {"pub-ip":"202.1.1.1", "pri-ip":"192.168.1.1", "username":"hahaha", "passwd":"xxxx", "enabled":1},
@@ -195,3 +196,4 @@ int CSocksSrvMgr::output_socks_server(char *resp_buf, int buf_len)
     }
     return cur_pos;
 }
+#endif

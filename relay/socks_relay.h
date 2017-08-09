@@ -2,6 +2,12 @@
 #define _SOCKS5_RELAY_H
 
 
+#define  MAX_URL_LEN 256
+
+extern char g_relaysn[MAX_SN_LEN];
+extern char g_relay_passwd[MAX_PASSWD_LEN];
+extern char g_relay_url[MAX_URL_LEN];
+
 extern uint64_t g_new_client_cnt;
 extern uint64_t g_new_remote_cnt;
 

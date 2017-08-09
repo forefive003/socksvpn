@@ -49,9 +49,9 @@ public:
     }
 
 private:
-    int _cfg_get_sock_srv_info(struct json_object *reqParamObj, char *resp_buf, int buf_len);
-    int _cfg_set_sock_srv_info(struct json_object *reqParamObj, char *resp_buf, int buf_len);
-    int _cfg_set_debug_level(struct json_object *reqParamObj, char *resp_buf, int buf_len);
+    int _set_server_cfg(struct json_object *paramObj, char *resp_buf, int buf_len);
+    int _set_debug_level(struct json_object *paramObj, char *resp_buf, int buf_len);
+    int _get_server_cfg(struct json_object *paramObj, char *resp_buf, int buf_len);
 
     int request_handle(char *buffer, int buf_len, char *resp_buf, int resp_buf_len);
 
