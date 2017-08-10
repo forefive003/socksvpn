@@ -7,6 +7,8 @@
 
 #include "CHttpClient.h"
 #include "curl.h"
+#include "commtype.h"
+#include "logproc.h"
 
 #include <openssl/ssl.h>
 #include <pthread.h>
@@ -106,27 +108,27 @@ static int OnDebug(CURL *, curl_infotype itype, char * pData, size_t size, void 
 {
     if(itype == CURLINFO_TEXT)
     {
-    	COLL_LOG_DEBUG("[TEXT]%s", pData);
+    	_LOG_DEBUG("[TEXT]%s", pData);
     }
     else if(itype == CURLINFO_HEADER_IN)
     {
-    	COLL_LOG_INFO("[HEADER_IN]%s", pData);
+    	_LOG_INFO("[HEADER_IN]%s", pData);
     }
     else if(itype == CURLINFO_HEADER_OUT)
     {
-    	COLL_LOG_INFO("[HEADER_OUT]%s", pData);
+    	_LOG_INFO("[HEADER_OUT]%s", pData);
     }
     else if(itype == CURLINFO_DATA_IN)
     {
-    	COLL_LOG_INFO("[DATA_IN]%s", pData);
+    	_LOG_INFO("[DATA_IN]%s", pData);
     }
     else if(itype == CURLINFO_DATA_OUT)
     {
-    	COLL_LOG_INFO("[DATA_OUT]%s", pData);
+    	_LOG_INFO("[DATA_OUT]%s", pData);
     }
     else
     {
-    	COLL_LOG_INFO("[DATA_OUT]itype %d, %s", itype, pData);
+    	_LOG_INFO("[DATA_OUT]itype %d, %s", itype, pData);
     }
 
     return 0;
@@ -137,7 +139,7 @@ static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
     std::string* str = dynamic_cast<std::string*>((std::string *)lpVoid);
     if( NULL == str || NULL == buffer )
     {
-    	COLL_LOG_ERROR("OnWriteData param invalid.");
+    	_LOG_ERROR("OnWriteData param invalid.");
         return -1;
     }
 
@@ -153,7 +155,7 @@ static size_t OnWriteFile(void* buffer, size_t size, size_t nmemb, void* lpVoid)
     FILE *pFd = dynamic_cast<FILE*>((FILE*)lpVoid);
     if( NULL == pFd || NULL == buffer )
     {
-    	COLL_LOG_ERROR("OnWriteFile param invalid.");
+    	_LOG_ERROR("OnWriteFile param invalid.");
         return -1;
     }
 
@@ -171,8 +173,8 @@ int CHttpClient::Post(std::string &strUrl,
     CURL* curl = curl_easy_init();
     if(NULL == curl)
     {
-    	COLL_LOG_ERROR("curl post init failed.");
-        return ERROR;
+    	_LOG_ERROR("curl post init failed.");
+        return -1;
     }
 
     if (m_debug)
@@ -215,21 +217,21 @@ int CHttpClient::Post(std::string &strUrl,
     {
     	char errDesc[32] = {0};
     	curCodeDesc(res, errDesc);
-    	COLL_LOG_WARN("curl post perform failed, error %s.", errDesc);
+    	_LOG_WARN("curl post perform failed, error %s.", errDesc);
     }
 
     curl_easy_cleanup(curl);
     if (res == CURLE_OK)
 	{
-		return OK;
+		return 0;
 	}
 	else if (res == CURLE_COULDNT_CONNECT
 			|| res == CURLE_OPERATION_TIMEDOUT)
 	{
-		return NTG_CON_FAILED;
+		return HTTP_CONNECT_FAILED;
 	}
 
-	return ERROR;
+	return -1;
 }
 
 int CHttpClient::Get(const std::string &strUrl, std::string &strResponse)
@@ -238,8 +240,8 @@ int CHttpClient::Get(const std::string &strUrl, std::string &strResponse)
     CURL* curl = curl_easy_init();
     if(NULL == curl)
     {
-    	COLL_LOG_ERROR("curl get init failed.");
-        return ERROR;
+    	_LOG_ERROR("curl get init failed.");
+        return -1;
     }
 
     if (m_debug)
@@ -288,7 +290,7 @@ int CHttpClient::Get(const std::string &strUrl, std::string &strResponse)
 	{
     	char errDesc[32] = {0};
 		curCodeDesc(res, errDesc);
-		COLL_LOG_WARN("curl get perform failed, error %s.", errDesc);
+		_LOG_WARN("curl get perform failed, error %s.", errDesc);
 	}
 
 #if 0
@@ -299,15 +301,15 @@ int CHttpClient::Get(const std::string &strUrl, std::string &strResponse)
     curl_easy_cleanup(curl);
     if (res == CURLE_OK)
     {
-    	return OK;
+    	return 0;
     }
     else if (res == CURLE_COULDNT_CONNECT
     		|| res == CURLE_OPERATION_TIMEDOUT)
     {
-    	return NTG_CON_FAILED;
+    	return HTTP_CONNECT_FAILED;
     }
 
-    return ERROR;
+    return -1;
 }
 
 int CHttpClient::DownLoadFile(const std::string &strUrl, std::string &strFileName)
@@ -315,8 +317,8 @@ int CHttpClient::DownLoadFile(const std::string &strUrl, std::string &strFileNam
 	FILE *pFd = fopen(strFileName.c_str(), "w");
 	if (NULL == pFd)
 	{
-		COLL_LOG_ERROR("open file %s failed.", strFileName.c_str());
-		return ERROR;
+		_LOG_ERROR("open file %s failed.", strFileName.c_str());
+		return -1;
 	}
 
 	CURLcode res;
@@ -324,8 +326,8 @@ int CHttpClient::DownLoadFile(const std::string &strUrl, std::string &strFileNam
 	if(NULL == curl)
 	{
 		fclose(pFd);
-		COLL_LOG_ERROR("curl get init failed.");
-		return ERROR;
+		_LOG_ERROR("curl get init failed.");
+		return -1;
 	}
 
 	if (m_debug)
@@ -365,7 +367,7 @@ int CHttpClient::DownLoadFile(const std::string &strUrl, std::string &strFileNam
 	{
 		char errDesc[32] = {0};
 		curCodeDesc(res, errDesc);
-		COLL_LOG_WARN("curl download perform failed, error %s.", errDesc);
+		_LOG_WARN("curl download perform failed, error %s.", errDesc);
 	}
 
 	curl_easy_cleanup(curl);
@@ -373,15 +375,15 @@ int CHttpClient::DownLoadFile(const std::string &strUrl, std::string &strFileNam
 	fclose(pFd);
 	if (res == CURLE_OK)
 	{
-		return OK;
+		return 0;
 	}
 	else if (res == CURLE_COULDNT_CONNECT
 			|| res == CURLE_OPERATION_TIMEDOUT)
 	{
-		return NTG_CON_FAILED;
+		return HTTP_CONNECT_FAILED;
 	}
 
-	return ERROR;
+	return -1;
 }
 
 #if 0

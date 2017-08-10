@@ -12,6 +12,8 @@
 using namespace std;
 
 
+#define HTTP_CONNECT_FAILED  -2
+
 #define  CONNECT_TIMEOUT 10
 
 #define  GET_TIMEOUT 20

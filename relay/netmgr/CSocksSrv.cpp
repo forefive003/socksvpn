@@ -391,7 +391,16 @@ void CSocksSrv::print_statistic(FILE *pFd)
 {
     fprintf(pFd, "server-%s:%u inner %s:%u\n", m_ipstr, m_port,
         m_inner_ipstr, m_inner_port);
-    fprintf(pFd, "\tusername:%s\t passwd:%s enabled:%d\n", m_username, m_passwd, m_enabled);
+
+    fprintf(pFd, "\tsn:%s, acct cnt %d\n", m_srvCfg.m_sn, m_srvCfg.m_acct_cnt);
+    for(int ii = 0; ii < m_srvCfg.m_acct_cnt; ii++)
+    {
+        fprintf(pFd, "\tusername:%s\t passwd:%s enabled:%d\n", 
+            m_srvCfg.m_acct_infos[ii].username, 
+            m_srvCfg.m_acct_infos[ii].passwd, 
+            m_srvCfg.m_acct_infos[ii].enabled);
+    }
+
     fprintf(pFd, "\tsend: client-close:%"PRIu64"\t connect-req:%"PRIu64"\t data:%"PRIu64"\n", 
         m_send_client_close_cnt, m_send_client_connect_cnt, m_send_data_cnt);
     fprintf(pFd, "\trecv: remote-close:%"PRIu64"\t connect-resp:%"PRIu64"\t data:%"PRIu64"\t srv-alive:%"PRIu64"\n", 

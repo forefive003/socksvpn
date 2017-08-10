@@ -2,7 +2,10 @@
 #ifndef CSERVER_CFG_H_
 #define CSERVER_CFG_H_
 
-struct  server_info
+#include <list>
+#include "ipparser.h"
+
+typedef struct  server_info
 {
 	char username[MAX_USERNAME_LEN + 1];
 	char passwd[MAX_PASSWD_LEN + 1];

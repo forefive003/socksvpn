@@ -33,6 +33,7 @@ static BOOL g_exit = false;
 static void Usage(char *program)
 {
     printf("Usage: params of %s \n", program);
+    printf("%-8s -h for help\n", "");
     printf("%-8s -c <the listen port that client connect to>\n", "");
     printf("%-8s -s <the listen port that server connect to>\n", "");
     printf("%-8s -a <the url of manager plain, for example: http://www.domain.com/api>\n", "");
@@ -50,8 +51,12 @@ static int cmd_parser(int argc, char *argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "c:s:a:n:w:h")) != -1) {
+    while ((opt = getopt(argc, argv, "hc:s:a:n:w:h")) != -1) {
         switch (opt) {
+        case 'h':
+            Usage(argv[0]);
+            return 0;
+            break;
         case 'c':
             g_client_port = atoi(optarg);
             printf("get option: listen port that client connect to is %u\n", g_client_port);

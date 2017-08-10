@@ -4,6 +4,8 @@
 
 #include "relay_pkt_def.h"
 #include "CNetRecv.h"
+#include "CServerCfg.h"
+
 
 class CSocksSrv : public CNetRecv
 {

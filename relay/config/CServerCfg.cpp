@@ -1,7 +1,9 @@
+#include <pthread.h>
+
 #include "commtype.h"
 #include "logproc.h"
 #include "common_def.h"
-#include "CServCfg.h"
+#include "CServerCfg.h"
 
 
 CServCfgMgr *g_SrvCfgMgr = NULL;
