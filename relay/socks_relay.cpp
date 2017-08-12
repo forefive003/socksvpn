@@ -53,10 +53,6 @@ static int cmd_parser(int argc, char *argv[])
 
     while ((opt = getopt(argc, argv, "hc:s:a:n:w:h")) != -1) {
         switch (opt) {
-        case 'h':
-            Usage(argv[0]);
-            return 0;
-            break;
         case 'c':
             g_client_port = atoi(optarg);
             printf("get option: listen port that client connect to is %u\n", g_client_port);
@@ -80,7 +76,7 @@ static int cmd_parser(int argc, char *argv[])
 
         case 'h':
             Usage(argv[0]);
-            return 0;
+            return -1;
             break;
         default:
             printf("Invalid param key %d", opt);
