@@ -212,6 +212,21 @@ int CHttpClient::Post(std::string &strUrl,
 	/*设置允许执行的最长秒数*/
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, POST_TIMEOUT);
 
+#if 0
+    /*自定义http头部*/
+    struct curl_slist *headers=NULL; /* init to NULL is important */
+	headerlist = curl_slist_append(headers, "Hey-server-hey: how are you?");
+	headerlist = curl_slist_append(headers, "X-silly-content: yes");
+	/* pass our list of custom made headers */
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
+#else
+	struct curl_slist *http_headers=NULL; /* init to NULL is important */
+	http_headers = curl_slist_append(http_headers, "Accept: application/json");
+    http_headers = curl_slist_append(http_headers, "Content-Type: application/json");
+    http_headers = curl_slist_append(http_headers, "charsets: utf-8");
+    code = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_headers);
+#endif
+
     res = curl_easy_perform(curl);
     if (res != CURLE_OK)
     {
@@ -283,6 +298,12 @@ int CHttpClient::Get(const std::string &strUrl, std::string &strResponse)
 	headerlist = curl_slist_append(headers, "X-silly-content: yes");
 	/* pass our list of custom made headers */
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
+#else
+	struct curl_slist *http_headers=NULL; /* init to NULL is important */
+	http_headers = curl_slist_append(http_headers, "Accept: application/json");
+    http_headers = curl_slist_append(http_headers, "Content-Type: application/json");
+    http_headers = curl_slist_append(http_headers, "charsets: utf-8");
+    code = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_headers);
 #endif
 
     res = curl_easy_perform(curl);
