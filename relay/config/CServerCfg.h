@@ -27,12 +27,15 @@ public:
 		memset(m_acct_infos, 0, sizeof(m_acct_infos));
 	}
 
-	acct_info_t m_acct_infos[MAX_ACCT_PER_SERVER];
-	int m_acct_cnt;
+	CServerCfg(CServerCfg &srvCfg)
+	{
+		strncpy(m_sn, srvCfg.m_sn, MAX_SN_LEN);
+		strncpy(m_pub_ip, srvCfg.m_pub_ip, IP_DESC_LEN);
+		strncpy(m_pri_ip, srvCfg.m_pri_ip, IP_DESC_LEN);
 
-	char m_sn[MAX_SN_LEN];
-	char m_pub_ip[IP_DESC_LEN];
-	char m_pri_ip[IP_DESC_LEN];
+		m_acct_cnt = srvCfg.m_acct_cnt;
+		memcpy(m_acct_infos, srvCfg.m_acct_infos, sizeof(m_acct_infos));
+	}
 
 	bool is_self(char *sn)
 	{
@@ -43,6 +46,14 @@ public:
 
 		return false;
 	}
+
+public:
+	acct_info_t m_acct_infos[MAX_ACCT_PER_SERVER];
+	int m_acct_cnt;
+
+	char m_sn[MAX_SN_LEN];
+	char m_pub_ip[IP_DESC_LEN];
+	char m_pri_ip[IP_DESC_LEN];
 };
 
 
@@ -59,6 +70,9 @@ public:
 
     int add_server_cfg(CServerCfg *srvCfg);
     void del_server_cfg(CServerCfg *srvCfg);
+    int get_server_cfg(char *sn, CServerCfg *srvCfg);
+
+private:
     CServerCfg* find_server_cfg(char *sn);
     
 
@@ -70,4 +84,3 @@ private:
 extern CServCfgMgr *g_SrvCfgMgr;
 
 #endif
-

@@ -18,7 +18,9 @@
 #include "sigproc.h"
 #include "CSocksMem.h"
 #include "utilfile.h"
-
+#include "CServerCfg.h"
+#include "CWebApi.h"
+#include "CConfigServer.h"
 
 uint16_t g_client_port = DEF_RELAY_CLI_PORT;
 uint16_t g_server_port = DEF_RELAY_SRV_PORT;
@@ -30,6 +32,14 @@ char g_relay_url[MAX_URL_LEN] = {0};
 
 static BOOL g_exit = false;
 
+BOOL is_relay_need_auth()
+{
+    if (g_relay_url[0] == 0)
+        return FALSE;
+
+    return TRUE;
+}
+
 static void Usage(char *program)
 {
     printf("Usage: params of %s \n", program);
@@ -38,7 +48,7 @@ static void Usage(char *program)
     printf("%-8s -s <the listen port that server connect to>\n", "");
     printf("%-8s -a <the url of manager plain, for example: http://www.domain.com/api>\n", "");
     printf("%-8s -n <the sn of relay server, max 32 bytes len, for example: AABBCCDD002233bb>\n", "");
-    printf("%-8s -w <the passwd of relay server, max 32 bytes len, for example: abc123>\n", "");
+    printf("%-8s -w <the passwd of relay server when recv from platform, max 32 bytes len, for example: abc123>\n", "");
 }
 
 /*
@@ -92,6 +102,19 @@ static int cmd_parser(int argc, char *argv[])
         return -1;
     }
 
+    if (is_relay_need_auth())
+    {
+        if (g_relaysn[0] == 0)
+        {
+            printf("no relay sn, but has platform url\n");
+            return -1;
+        }
+        if (g_relay_passwd[0] == 0)
+        {
+            printf("no relay passwd, but has platform url\n");
+            return -1;   
+        }
+    }
     return 0;
 }
 
@@ -211,6 +234,15 @@ static int register_signal(void)
 static void _timer_callback(void* param1, void* param2,
                 void* param3, void* param4)
 {
+    /*通知平台relay上线*/
+    if (is_relay_need_auth())
+    {
+        if(0 != g_webApi->postRelayOnline(g_relaysn, g_relay_passwd))
+        {
+            _LOG_WARN("relay post platform failed");
+        }
+    }
+
     print_statistic();
 }
 
@@ -246,7 +278,9 @@ int main(int argc, char **argv)
     g_ConnMgr = CConnMgr::instance();
     g_SocksSrvMgr = CSocksSrvMgr::instance();
     g_ClientNetMgr = CClientNetMgr::instance();
-    
+    g_webApi = CWebApi::instance(g_relay_url);
+    g_SrvCfgMgr = CServCfgMgr::instance();
+
     g_ClientServ = CClientServer::instance(g_client_port);
     if(OK != g_ClientServ->init())
     {
@@ -269,6 +303,21 @@ int main(int argc, char **argv)
         printf("config server init failed.\n");
         loggger_exit();
         return -1;
+    }
+
+    /*通知平台relay上线*/
+    if (is_relay_need_auth())
+    {
+        if(0 != g_webApi->postRelayOnline(g_relaysn, g_relay_passwd))
+        {
+            _LOG_WARN("relay post platform failed");
+        }
+
+        /*从平台获取配置*/
+        if(0 != g_webApi->getRelayConfig(g_relaysn))
+        {
+            _LOG_WARN("relay get config from platform failed");
+        }
     }
 
     np_add_time_job(_timer_callback, NULL, NULL, NULL, NULL, 10, FALSE);

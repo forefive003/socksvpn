@@ -4,7 +4,8 @@
 #include "logproc.h"
 #include "common_def.h"
 #include "CServerCfg.h"
-
+#include "CSocksSrv.h"
+#include "CSocksSrvMgr.h"
 
 CServCfgMgr *g_SrvCfgMgr = NULL;
 
@@ -27,6 +28,29 @@ CServCfgMgr* CServCfgMgr::instance()
         srvCfgMgr = new CServCfgMgr();
     }
     return srvCfgMgr;
+}
+
+int CServCfgMgr::get_server_cfg(char *sn, CServerCfg *srvCfg)
+{
+    CSERVCFG_LIST_Itr itr;
+    CServerCfg *tmp_srvCfg = NULL;
+
+    MUTEX_LOCK(m_obj_lock);
+    for (itr = m_objs.begin();
+            itr != m_objs.end();
+            itr++)
+    {
+        tmp_srvCfg = *itr;
+        if (tmp_srvCfg->is_self(sn))
+        {
+            *srvCfg = *tmp_srvCfg;
+            MUTEX_UNLOCK(m_obj_lock);
+            return 0;
+        }
+    }
+    MUTEX_UNLOCK(m_obj_lock);
+
+    return -1;
 }
 
 CServerCfg* CServCfgMgr::find_server_cfg(char *sn)
@@ -73,6 +97,21 @@ int CServCfgMgr::add_server_cfg(CServerCfg *srvCfg)
 
     tmp_srvCfg->m_acct_cnt = srvCfg->m_acct_cnt;
     memcpy(tmp_srvCfg->m_acct_infos, srvCfg->m_acct_infos, sizeof(srvCfg->m_acct_infos));
+
+    /*找到SocksSrv, 下发配置*/
+    CSocksSrv *socksSrv = NULL;
+    g_SocksSrvMgr->lock();
+    socksSrv = g_SocksSrvMgr->get_socks_server_by_innnerip(tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
+    if (NULL == socksSrv)
+    {
+        g_SocksSrvMgr->unlock();
+        _LOG_WARN("socksserver %s(%s) not exist", tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
+    }
+    else
+    {
+        socksSrv->set_config(tmp_srvCfg);
+    }
+    g_SocksSrvMgr->unlock();
     return 0;
 }
 

@@ -10,6 +10,7 @@
 #include "CSocksMem.h"
 #include "CSocksSrvMgr.h"
 #include "socks_relay.h"
+#include "CServerCfg.h"
 
 CConfigAccept *g_ConfigServ = NULL;
 
@@ -272,7 +273,6 @@ int CConfigSrv::_set_server_cfg(struct json_object *paramObj, char *resp_buf, in
     }
 
     g_SrvCfgMgr->add_server_cfg(&srvCfg);
-    /*TODO:*/
     return 0;
 }
 

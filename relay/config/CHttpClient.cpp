@@ -224,7 +224,7 @@ int CHttpClient::Post(std::string &strUrl,
 	http_headers = curl_slist_append(http_headers, "Accept: application/json");
     http_headers = curl_slist_append(http_headers, "Content-Type: application/json");
     http_headers = curl_slist_append(http_headers, "charsets: utf-8");
-    code = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_headers);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_headers);
 #endif
 
     res = curl_easy_perform(curl);
@@ -303,7 +303,7 @@ int CHttpClient::Get(const std::string &strUrl, std::string &strResponse)
 	http_headers = curl_slist_append(http_headers, "Accept: application/json");
     http_headers = curl_slist_append(http_headers, "Content-Type: application/json");
     http_headers = curl_slist_append(http_headers, "charsets: utf-8");
-    code = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_headers);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_headers);
 #endif
 
     res = curl_easy_perform(curl);

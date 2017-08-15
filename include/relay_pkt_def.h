@@ -85,6 +85,7 @@ typedef struct _server_reg_pkt_
 	uint32_t local_ip;
 	uint16_t local_port;
 	uint16_t is_keepalive;
+	char sn[MAX_SN_LEN];
 }PKT_SRV_REG_T;
 
 #endif

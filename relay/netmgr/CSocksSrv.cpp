@@ -8,6 +8,7 @@
 #include "CSocksSrvMgr.h"
 #include "socks_relay.h"
 #include "CSocksMem.h"
+#include "CWebApi.h"
 
 int CSocksSrv::msg_srv_reg_handle(char *data_buf, int data_len)
 {
@@ -45,6 +46,20 @@ int CSocksSrv::msg_srv_reg_handle(char *data_buf, int data_len)
         g_SocksSrvMgr->unlock();
 
         this->set_inner_info(srvReg->local_ip, srvReg->local_port);
+
+        /*获取配置*/
+        if (srvReg->sn[0] != 0)
+        {
+            if(0 != g_SrvCfgMgr->get_server_cfg(srvReg->sn, &this->m_srvCfg))
+            {
+                _LOG_WARN("socksserver 0x%x, localip 0x%x failed to get srv config", m_ipaddr, srvReg->local_ip);
+            }
+            /*通知平台*/
+            if(0 != g_webApi->postServerOnline(srvReg->sn, m_ipstr, m_inner_ipstr, true))
+            {
+                _LOG_WARN("socksserver 0x%x, localip 0x%x failed to post platform", m_ipaddr, srvReg->local_ip);
+            }
+        }
     }
 
     this->m_update_time = util_get_cur_time();
@@ -355,6 +370,11 @@ BOOL CSocksSrv::is_self(uint32_t pub_ipaddr, char *username)
     if (pub_ipaddr != m_ipaddr)
     {
         return FALSE;
+    }
+
+    if (is_relay_need_auth() == FALSE)
+    {
+        return TRUE;
     }
 
     for (int ii = 0; ii < m_srvCfg.m_acct_cnt; ii++)
