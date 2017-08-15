@@ -21,14 +21,18 @@ uint16_t g_relay_port = DEF_RELAY_SRV_PORT;
 encry_key_t *g_encry_key = NULL;
 int g_encry_method = 0;
 
+char g_server_sn[MAX_SN_LEN] = {0};
+
 static void Usage(char *program)
 {
     printf("Usage: params of %s \n", program);
+    printf("%-8s -h for help\n", "");
     printf("%-8s -r <relay server ip>\n", "");
     printf("%-8s -d <relay server domain name>\n", "");
     printf("%-8s -p <relay server port>\n", "");
     printf("%-8s -m <xor|rc4>, Don't take this option when needn't encrypt data\n", "");
     printf("%-8s -e <encrypt key>\n", "");
+    printf("%-8s -n <the sn of server, max 32 bytes len, for example: AABBCCDD002233bb>\n", "");
 }
 
 
@@ -47,8 +51,17 @@ static int cmd_parser(int argc, char *argv[])
     struct sockaddr_storage ipaddr;
     size_t key_len;
 
-    while ((opt = getopt(argc, argv, "r:d:p:m:e:h")) != -1) {
+    while ((opt = getopt(argc, argv, "hr:d:p:m:e:n:")) != -1) {
         switch (opt) {
+        case 'h':
+            Usage(argv[0]);
+            return -1;
+            break;
+        case 'n':
+            strncpy(g_server_sn, optarg, MAX_SN_LEN-1);
+            printf("get option: serverSN is %s\n", g_server_sn);
+            break;
+
         case 'r':
             strncpy(g_relay_ipstr, optarg, HOST_IP_LEN);
             if (0 != util_str_to_ip(g_relay_ipstr, &ipaddr))
@@ -89,10 +102,6 @@ static int cmd_parser(int argc, char *argv[])
             g_encry_key = (encry_key_t*)malloc(sizeof(encry_key_t) + key_len);
             g_encry_key->len = key_len;
             memcpy(g_encry_key->key, optarg, key_len);
-            break;
-        case 'h':
-            Usage(argv[0]);
-            return 0;
             break;
         default:
             printf("Invalid param key %d", opt);

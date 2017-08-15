@@ -25,6 +25,8 @@ public:
 
 		m_acct_cnt = 0;
 		memset(m_acct_infos, 0, sizeof(m_acct_infos));
+
+		m_is_online = false;
 	}
 
 	CServerCfg(CServerCfg &srvCfg)
@@ -47,6 +49,11 @@ public:
 		return false;
 	}
 
+	void set_online(bool online)
+	{
+		m_is_online = online;
+		_LOG_INFO("set server SN %s, pub %s, pri %s, online %d", m_sn, m_pub_ip, m_pri_ip, online);
+	}
 public:
 	acct_info_t m_acct_infos[MAX_ACCT_PER_SERVER];
 	int m_acct_cnt;
@@ -54,6 +61,8 @@ public:
 	char m_sn[MAX_SN_LEN];
 	char m_pub_ip[IP_DESC_LEN];
 	char m_pri_ip[IP_DESC_LEN];
+
+	bool m_is_online; /*是否在线*/
 };
 
 
@@ -70,8 +79,11 @@ public:
 
     int add_server_cfg(CServerCfg *srvCfg);
     void del_server_cfg(CServerCfg *srvCfg);
-    int get_server_cfg(char *sn, CServerCfg *srvCfg);
 
+
+    int server_online_handle(char *sn, CServerCfg *srvCfg);
+    void server_post_keepalive();
+    
 private:
     CServerCfg* find_server_cfg(char *sn);
     

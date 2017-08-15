@@ -17,4 +17,6 @@ extern uint64_t g_total_connect_req_cnt;
 extern uint64_t g_total_connect_resp_cnt;
 extern uint64_t g_total_connect_resp_consume_time;
 
+extern char g_server_sn[MAX_SN_LEN];
+
 #endif

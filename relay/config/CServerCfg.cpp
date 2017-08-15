@@ -6,6 +6,9 @@
 #include "CServerCfg.h"
 #include "CSocksSrv.h"
 #include "CSocksSrvMgr.h"
+#include "socks_relay.h"
+#include "CWebApi.h"
+
 
 CServCfgMgr *g_SrvCfgMgr = NULL;
 
@@ -30,8 +33,45 @@ CServCfgMgr* CServCfgMgr::instance()
     return srvCfgMgr;
 }
 
-int CServCfgMgr::get_server_cfg(char *sn, CServerCfg *srvCfg)
+void CServCfgMgr::server_post_keepalive()
 {
+    if (is_relay_need_platform() == false)
+    {
+        return;
+    }
+
+    CSERVCFG_LIST_Itr itr;
+    CServerCfg *tmp_srvCfg = NULL;
+
+    MUTEX_LOCK(m_obj_lock);
+    for (itr = m_objs.begin();
+            itr != m_objs.end();
+            itr++)
+    {
+        tmp_srvCfg = *itr;
+
+        if (tmp_srvCfg->m_is_online == false)
+        {
+            continue;
+        }
+
+        /*通知平台*/
+        if(0 != g_webApi->postServerOnline(tmp_srvCfg->m_sn, tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip, TRUE))
+        {
+            _LOG_WARN("socksserver %x, localip %s failed to post keepalive to platform", tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
+        }
+    }
+    MUTEX_UNLOCK(m_obj_lock);
+    return;
+}
+
+int CServCfgMgr::server_online_handle(char *sn, CServerCfg *srvCfg)
+{
+    if (is_relay_need_platform() == false)
+    {
+        return 0;
+    }
+
     CSERVCFG_LIST_Itr itr;
     CServerCfg *tmp_srvCfg = NULL;
 
@@ -43,13 +83,24 @@ int CServCfgMgr::get_server_cfg(char *sn, CServerCfg *srvCfg)
         tmp_srvCfg = *itr;
         if (tmp_srvCfg->is_self(sn))
         {
+            /*设置在线*/
+            tmp_srvCfg->set_online(TRUE);
+
+            /*拷贝配置*/
             *srvCfg = *tmp_srvCfg;
             MUTEX_UNLOCK(m_obj_lock);
+
+            /*通知平台*/
+            if(0 != g_webApi->postServerOnline(sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip, TRUE))
+            {
+                _LOG_WARN("socksserver %x, localip %s failed to post platform", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
+            }
             return 0;
         }
     }
     MUTEX_UNLOCK(m_obj_lock);
 
+    _LOG_WARN("failed to get srv config for server sn %s",sn);
     return -1;
 }
 
@@ -110,6 +161,8 @@ int CServCfgMgr::add_server_cfg(CServerCfg *srvCfg)
     else
     {
         socksSrv->set_config(tmp_srvCfg);
+        /*设置在线*/
+        tmp_srvCfg->set_online(TRUE);
     }
     g_SocksSrvMgr->unlock();
     return 0;

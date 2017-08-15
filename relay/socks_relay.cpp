@@ -32,7 +32,7 @@ char g_relay_url[MAX_URL_LEN] = {0};
 
 static BOOL g_exit = false;
 
-BOOL is_relay_need_auth()
+BOOL is_relay_need_platform()
 {
     if (g_relay_url[0] == 0)
         return FALSE;
@@ -102,7 +102,7 @@ static int cmd_parser(int argc, char *argv[])
         return -1;
     }
 
-    if (is_relay_need_auth())
+    if (is_relay_need_platform())
     {
         if (g_relaysn[0] == 0)
         {
@@ -165,6 +165,7 @@ static void stop_process(int sig)
 {
     g_exit = true;
     np_let_stop();
+    printf("recv sig %d, will stop process\n", sig);
     return;
 }
 
@@ -230,20 +231,25 @@ static int register_signal(void)
     return OK;
 }
 
-
 static void _timer_callback(void* param1, void* param2,
                 void* param3, void* param4)
 {
+    print_statistic();
+}
+
+static void _post_timer_callback(void* param1, void* param2,
+                void* param3, void* param4)
+{
     /*通知平台relay上线*/
-    if (is_relay_need_auth())
+    if (is_relay_need_platform())
     {
         if(0 != g_webApi->postRelayOnline(g_relaysn, g_relay_passwd))
         {
             _LOG_WARN("relay post platform failed");
         }
-    }
 
-    print_statistic();
+        g_SrvCfgMgr->server_post_keepalive();
+    }
 }
 
 int main(int argc, char **argv)
@@ -306,7 +312,7 @@ int main(int argc, char **argv)
     }
 
     /*通知平台relay上线*/
-    if (is_relay_need_auth())
+    if (is_relay_need_platform())
     {
         if(0 != g_webApi->postRelayOnline(g_relaysn, g_relay_passwd))
         {
@@ -321,10 +327,11 @@ int main(int argc, char **argv)
     }
 
     np_add_time_job(_timer_callback, NULL, NULL, NULL, NULL, 10, FALSE);
+    np_add_time_job(_post_timer_callback, NULL, NULL, NULL, NULL, 30, FALSE);
     np_start();
     while(g_exit == false)
     {
-        sleep(1);
+        usleep(1000);
     }
     np_wait_stop();
 

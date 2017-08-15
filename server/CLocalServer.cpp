@@ -59,6 +59,7 @@ int CLocalServer::send_register()
     reginfo.local_ip = this->m_local_ipaddr;
     reginfo.local_port = this->m_local_port;
     reginfo.is_keepalive = 0;
+    strncpy(reginfo.sn, g_server_sn, MAX_SN_LEN);
 
     MUTEX_LOCK(m_local_srv_lock);
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
@@ -91,7 +92,8 @@ int CLocalServer::send_keepalive()
     reginfo.local_ip = this->m_local_ipaddr;
     reginfo.local_port = this->m_local_port;
     reginfo.is_keepalive = 1;
-
+    strncpy(reginfo.sn, g_server_sn, MAX_SN_LEN);
+    
     MUTEX_LOCK(m_local_srv_lock);
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {

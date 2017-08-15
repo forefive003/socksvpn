@@ -810,7 +810,8 @@ void CNetPoll::let_stop()
 {
 	/*set to shutdown all thread*/
 	m_isShutDown = true;
-	_LOG_INFO("let loop to exit.");
+	/*maybe call this function in signal func, which easy to cause dead lock*/
+	//_LOG_INFO("let loop to exit.");
 }
 
 void CNetPoll::wait_stop()

@@ -1,6 +1,8 @@
 #ifndef _RELAY_PACKET_H
 #define _RELAY_PACKET_H
 
+#include "common_def.h"
+
 enum pkt_type_e{
 	PKT_C2R = 1, /*client to relay*/
 	PKT_R2S, /*relay to server*/

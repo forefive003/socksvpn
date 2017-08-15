@@ -146,7 +146,7 @@ static size_t OnWriteData(void* buffer, size_t size, size_t nmemb, void* lpVoid)
     char* pData = (char*)buffer;
     str->append(pData, size * nmemb);
 
-//    COLL_LOG_DEBUG("http receive debug: %s.", pData);
+    //_LOG_DEBUG("http receive debug: %s.", pData);
     return size * nmemb;
 }
 
@@ -159,9 +159,7 @@ static size_t OnWriteFile(void* buffer, size_t size, size_t nmemb, void* lpVoid)
         return -1;
     }
 
-//    fprintf(pFd, "%s", (char*)buffer);
-
-    //COLL_LOG_DEBUG("OnWriteFile %s.", (char*)buffer);
+    //_LOG_DEBUG("OnWriteFile %s.", (char*)buffer);
     return fwrite(buffer, size, nmemb, pFd);
 }
 

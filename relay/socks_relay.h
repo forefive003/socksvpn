@@ -4,7 +4,7 @@
 
 #define  MAX_URL_LEN 256
 
-BOOL is_relay_need_auth();
+BOOL is_relay_need_platform();
 
 extern char g_relaysn[MAX_SN_LEN];
 extern char g_relay_passwd[MAX_PASSWD_LEN];

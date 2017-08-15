@@ -15,6 +15,7 @@ public:
 	CWebApi(char *url)
 	{
 		m_url = url;
+		m_http_client.setDebug();
 	}
 	virtual ~CWebApi()
 	{
