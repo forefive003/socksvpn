@@ -21,6 +21,9 @@ uint16_t g_relay_port = DEF_RELAY_SRV_PORT;
 encry_key_t *g_encry_key = NULL;
 int g_encry_method = 0;
 
+/*0为不记录日志*/
+int g_is_log = 0;
+
 char g_server_sn[MAX_SN_LEN] = {0};
 
 static void Usage(char *program)
@@ -33,6 +36,7 @@ static void Usage(char *program)
     printf("%-8s -m <xor|rc4>, Don't take this option when needn't encrypt data\n", "");
     printf("%-8s -e <encrypt key>\n", "");
     printf("%-8s -n <the sn of server, max 32 bytes len, for example: AABBCCDD002233bb>\n", "");
+    printf("%-8s -l <0|log_level(debug:1,info:2,warn:3,error:4)>, 0:not write log, otherwith write log\n", "");
 }
 
 
@@ -51,11 +55,14 @@ static int cmd_parser(int argc, char *argv[])
     struct sockaddr_storage ipaddr;
     size_t key_len;
 
-    while ((opt = getopt(argc, argv, "hr:d:p:m:e:n:")) != -1) {
+    while ((opt = getopt(argc, argv, "hr:d:p:m:e:n:l:")) != -1) {
         switch (opt) {
         case 'h':
             Usage(argv[0]);
             return -1;
+            break;
+        case 'l':
+            g_is_log = atoi(optarg);
             break;
         case 'n':
             strncpy(g_server_sn, optarg, MAX_SN_LEN-1);
@@ -315,7 +322,14 @@ int main(int argc, char **argv)
     register_signal();
 
 	loggger_init((char*)("/tmp/"), (char*)("socks_server"), 1 * 1024, 6, true);
-	logger_set_level(L_INFO);
+    if (g_is_log > 0)
+    {
+	   logger_set_level(g_is_log - 1);
+    }
+    else
+    {
+       logger_set_level(L_QUIET); 
+    }
 
 	if (FALSE == np_init())
 	{

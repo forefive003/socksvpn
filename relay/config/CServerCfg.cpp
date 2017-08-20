@@ -93,7 +93,7 @@ int CServCfgMgr::server_online_handle(char *sn, CServerCfg *srvCfg)
             /*通知平台*/
             if(0 != g_webApi->postServerOnline(sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip, TRUE))
             {
-                _LOG_WARN("socksserver %x, localip %s failed to post platform", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
+                _LOG_WARN("socksserver %s, localip %s failed to post platform", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
             }
             return 0;
         }

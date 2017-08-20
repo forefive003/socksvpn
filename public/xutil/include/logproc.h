@@ -33,7 +33,8 @@ enum
 	L_INFO,
 	L_WARN,
 	L_ERROR,
-
+	L_QUIET,
+	
 	L_MAX,
 };
 
