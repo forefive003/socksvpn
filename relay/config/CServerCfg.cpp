@@ -58,7 +58,7 @@ void CServCfgMgr::server_post_keepalive()
         /*通知平台*/
         if(0 != g_webApi->postServerOnline(tmp_srvCfg->m_sn, tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip, TRUE))
         {
-            _LOG_WARN("socksserver %x, localip %s failed to post keepalive to platform", tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
+            _LOG_WARN("socksserver %s, localip %s failed to post keepalive to platform", tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
         }
     }
     MUTEX_UNLOCK(m_obj_lock);

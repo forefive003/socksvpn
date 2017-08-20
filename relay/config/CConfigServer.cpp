@@ -366,29 +366,30 @@ int CConfigSrv::request_handle(char *buffer, int buf_len, char *resp_buf, int re
     tmpObj = json_object_object_get(new_obj, "type");
     if (tmpObj == NULL)
     {
-        _LOG_ERROR("recv invalid json str, type failed.");
-        json_object_put(new_obj);
-        return -1;
-    }
-    tmpStr = json_object_get_string(tmpObj);
-    if (NULL == tmpStr)
-    {
-        _LOG_ERROR("recv invalid json str, type value failed.");
-        json_object_put(new_obj);
-        return -1;
-    }
-
-    if (strncmp(tmpStr, "set-debug", strlen("set-debug")) == 0)
-    {
-        ret = this->_set_debug_level(new_obj, resp_buf, resp_buf_len);
-    }
-    else if (strncmp(tmpStr, "get-server-cfg", strlen("get-server-cfg")) == 0)
-    {
-        ret = this->_get_server_cfg(new_obj, resp_buf, resp_buf_len);
+        ret = this->_set_server_cfg(new_obj, resp_buf, resp_buf_len);
     }
     else
     {
-        ret = this->_set_server_cfg(new_obj, resp_buf, resp_buf_len);
+        tmpStr = json_object_get_string(tmpObj);
+        if (NULL == tmpStr)
+        {
+            _LOG_ERROR("recv invalid json str, type value failed.");
+            json_object_put(new_obj);
+            return -1;
+        }
+
+        if (strncmp(tmpStr, "set-debug", strlen("set-debug")) == 0)
+        {
+            ret = this->_set_debug_level(new_obj, resp_buf, resp_buf_len);
+        }
+        else if (strncmp(tmpStr, "get-server-cfg", strlen("get-server-cfg")) == 0)
+        {
+            ret = this->_get_server_cfg(new_obj, resp_buf, resp_buf_len);
+        }
+        else
+        {
+            ret = this->_set_server_cfg(new_obj, resp_buf, resp_buf_len);
+        }
     }
 
     json_object_put(new_obj);

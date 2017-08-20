@@ -57,7 +57,6 @@ static int send_request(char *buf, int buf_len)
         recv_len += ret_len;
         if (g_resp_buf[recv_len-1] == 0)
         {
-            printf("get end flag\n");
             break;
         }
     }
@@ -66,46 +65,54 @@ static int send_request(char *buf, int buf_len)
     return 0;
 }
 
-static int set_srv_user_pass(char *srv_ip, char *pri_ip, char *username, char *passwd)
+static int set_srv_config(char *srv_ip, char *pri_ip)
 {
     int ret_len = 0;
 
-    ret_len = snprintf(g_req_buf, 512, "{\"operation\":\"set\",\"target\":\"socks-srv\",\"param\": [");
-    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "{\"pub-ip\":\"%s\", \"pri-ip\":\"%s\", \"username\":\"%s\", \"passwd\":\"%s\"}",
-        srv_ip, pri_ip, username, passwd);
-    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "]}");
+    ret_len = snprintf(g_req_buf, 512, "{\"relaysn\":\"relay_testsn\",\"password\":\"123456\",\"body\": {");
+    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "\"sn\":\"server_testsn\", \"pub-ip\":\"%s\", \"pri-ip\":\"%s\", \"users\":[",
+        srv_ip, pri_ip);
+
+    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "{\"username\":\"%s\", \"passwd\":\"%s\", \"enabled\":1},",
+        "user1","passwd1");
+    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "{\"username\":\"%s\", \"passwd\":\"%s\", \"enabled\":1},",
+        "user2","passwd2");
+    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "{\"username\":\"%s\", \"passwd\":\"%s\", \"enabled\":1},",
+        "user3","passwd3");
+    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "{\"username\":\"%s\", \"passwd\":\"%s\", \"enabled\":1},",
+        "user4","passwd4");
+    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "{\"username\":\"%s\", \"passwd\":\"%s\", \"enabled\":1}",
+        "user5","passwd5");
+
+    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "]}}");
 
     return send_request(g_req_buf, ret_len+1);
 }
 
-static int set_srv_enabled(char *srv_ip, char *pri_ip, int enabled)
-{
-    int ret_len = 0;
-
-    ret_len = snprintf(g_req_buf, 512, "{\"operation\":\"set\",\"target\":\"socks-srv\",\"param\": [");
-    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "{\"pub-ip\":\"%s\", \"pri-ip\":\"%s\", \"enabled\":%d}",
-        srv_ip, pri_ip, enabled);
-    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "]}");
-
-    return send_request(g_req_buf, ret_len+1);
-}
-
+/*
+request: 
+    "type":"set-debug",
+    "level":"debug|info|warn"
+response: "code":0
+*/
 static int set_debug_level(char *debug_level)
 {
     int ret_len = 0;
 
-    ret_len = snprintf(g_req_buf, 512, "{\"operation\":\"set\",\"target\":\"debug\",\"param\": ");
-    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "{\"level\":\"%s\"}", debug_level);
-    ret_len += snprintf(&g_req_buf[ret_len], 512-ret_len, "}");
-
+    ret_len = snprintf(g_req_buf, 512, "{\"type\":\"set-debug\", \"level\":\"%s\"}", debug_level);
     return send_request(g_req_buf, ret_len+1);
 }
 
+/*
+request: 
+    "type":"get-server-cfg",
+response: "code":0, "params":"..."
+*/
 static int get_all_srv()
 {
     int ret_len = 0;
 
-    ret_len = snprintf(g_req_buf, 512, "{\"operation\":\"get\",\"target\":\"socks-srv\",\"param\": \"all\"}");
+    ret_len = snprintf(g_req_buf, 512, "{\"type\":\"set-get-server-cfg\"}");
     return send_request(g_req_buf, ret_len+1);
 }
 
@@ -113,7 +120,7 @@ static void Usage(char *program)
 {
     printf("Usage: params of %s \n", program);
     printf("%-8s --relay x.x.x.x --port xxx\n", "");
-    printf("%-8s --set --srv-ip x.x.x.x --pri-ip x.x.x.x --usrname xxxxx --passwd xxxxx --enable 1|0\n", "");
+    printf("%-8s --set --srv-ip x.x.x.x --pri-ip x.x.x.x\n", "");
     printf("%-8s --set --debug info|debug|warn\n", "");
     printf("%-8s --get --all-srv\n", "");
 }
@@ -124,9 +131,6 @@ static struct option g_long_options[] =
         {"get",  no_argument,       NULL, 'g'},
         {"srv-ip",  required_argument, NULL, 'r'},
         {"pri-ip",  required_argument, NULL, 'p'},
-        {"usrname", required_argument, NULL, 'u'},
-        {"passwd", required_argument, NULL, 'w'},
-        {"enable", required_argument, NULL, 'e'},
         {"debug", required_argument, NULL, 'd'},
         {"all-srv", no_argument, NULL, 'a'},
         {"relay", required_argument, NULL, 'l'},
@@ -134,30 +138,21 @@ static struct option g_long_options[] =
         {0, 0, 0, 0}
 };
 
-const static char *g_short_opts = "sgr:p:u:w:e:d:al:t:";
+const static char *g_short_opts = "sgr:p:d:al:t:";
 
-/*
-socks_config --set --srv-ip x.x.x.x --pri-ip x.x.x.x --usrname xxxxx --passwd xxxxx --enable 1|0
-             --set --debug info|debug|warn
-             --get --all-srv
-*/
 int main(int argc, char **argv)
 {
     int c;
     int option_index = 0;
 
-    bool has_enable_opt = false;
     bool has_set_opt = false;
 
     bool is_set = false;
     char *srv_ip = NULL;
     char *pri_ip = NULL;
-    char *usrname = NULL;
-    char *passwd = NULL;
-    int enabled = 0;
 
     char *debug_level = NULL;
-    char *get_val = NULL;
+    bool is_get_all = false;
 
     opterr = 0;
     optind = 1;
@@ -166,7 +161,6 @@ int main(int argc, char **argv)
         switch ( c )
         {
         case 's':
-            printf("fff\n");
             is_set = true;
             has_set_opt = true;
             break;
@@ -180,22 +174,11 @@ int main(int argc, char **argv)
         case 'p':
             pri_ip = optarg;
             break;
-        case 'u':
-            usrname = optarg;
-            break;
-        case 'w':
-            passwd = optarg;
-            break;
-        case 'e':
-            enabled = atoi(optarg);
-            has_enable_opt = true;
-            break;
         case 'd':
             debug_level = optarg;
             break;
         case 'a':
-            get_val = optarg;
-            get_val = get_val;
+            is_get_all = true;
             break;
         case 'l':
             strncpy(g_config_srv, optarg, 256);
@@ -229,15 +212,7 @@ int main(int argc, char **argv)
     {
         if (NULL != srv_ip && NULL != pri_ip)
         {
-            if (NULL != usrname && NULL != passwd)
-            {
-                set_srv_user_pass(srv_ip, pri_ip, usrname, passwd);
-            }
-
-            if (has_enable_opt)
-            {
-                set_srv_enabled(srv_ip, pri_ip, enabled);
-            }
+            set_srv_config(srv_ip, pri_ip);
         }
         else if (debug_level != NULL)
         {
@@ -252,7 +227,10 @@ int main(int argc, char **argv)
     }
     else
     {
-        get_all_srv();
+        if (is_get_all)
+        {
+            get_all_srv();
+        }
     }
 
     return 0;

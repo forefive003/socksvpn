@@ -87,7 +87,7 @@ int CWebApi::postRelayOnline(char *relaySn, char *relayPasswd)
 int CWebApi::postServerOnline(char *serverSn, char *pub_ip, char *pri_ip, bool online)
 {
 	char req[256] = {0};
-	snprintf(req, 256, "{\"cmd\":2,\"sn\":\"%s\",\"pub-ip\":\"%s\",\"pri-ip\":\"%s\",\"online\":\"%d\"}", 
+	snprintf(req, 256, "{\"cmd\":2,\"sn\":\"%s\",\"pub-ip\":\"%s\",\"pri-ip\":\"%s\",\"online\":%d}", 
 		serverSn, pub_ip, pri_ip, online);
 	std::string reqStr = req;
 	std::string responseStr;
@@ -347,7 +347,7 @@ int CWebApi::getRelayConfig(char *relaySn)
 	const char* res_str = NULL;
 
 	const char *response = responseStr.c_str();
-	_LOG_INFO("get response %s when post server online", response);
+	_LOG_INFO("get response %s when get relay config", response);
 
 	new_obj = json_tokener_parse(response);
 	if( is_error(new_obj))
