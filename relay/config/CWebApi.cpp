@@ -131,7 +131,6 @@ int CWebApi::postServerOnline(char *serverSn, char *pub_ip, char *pri_ip, bool o
 	if (atoi(res_str) == 1)
 	{
 		json_object_put(new_obj);
-		_LOG_ERROR("post server online failed");
 		return -1;
 	}
 
