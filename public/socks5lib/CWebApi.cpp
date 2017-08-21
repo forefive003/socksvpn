@@ -4,17 +4,10 @@
 #include "commtype.h"
 #include "logproc.h"
 #include "common_def.h"
-#include "socks_relay.h"
 #include "CWebApi.h"
 #include "CNetAccept.h"
 #include "CNetRecv.h"
-#include "common_def.h"
-#include "CConfigServer.h"
-#include "CSocksMem.h"
-#include "CSocksSrvMgr.h"
-#include "socks_relay.h"
-#include "CServerCfg.h"
-
+#include "ipparser.h"
 
 CWebApi *g_webApi = NULL;
 
@@ -29,10 +22,11 @@ CWebApi* CWebApi::instance(char *url)
     return webApi;
 }
 
-int CWebApi::postRelayOnline(char *relaySn, char *relayPasswd)
+int CWebApi::postRelayOnline(char *relaySn, char *relayPasswd, short relayPort)
 {
 	char req[256] = {0};
-	snprintf(req, 256, "{\"cmd\":1,\"relaysn\":\"%s\",\"password\":\"%s\"}", relaySn, relayPasswd);
+	snprintf(req, 256, "{\"cmd\":1,\"relaysn\":\"%s\",\"password\":\"%s\",\"port\":%d}", 
+		relaySn, relayPasswd, relayPort);
 	std::string reqStr = req;
 	std::string responseStr;
 
@@ -84,11 +78,11 @@ int CWebApi::postRelayOnline(char *relaySn, char *relayPasswd)
 	return 0;
 }
 
-int CWebApi::postServerOnline(char *serverSn, char *pub_ip, char *pri_ip, bool online)
+int CWebApi::postServerOnline(char *relaySn, char *serverSn, char *pub_ip, char *pri_ip, bool online)
 {
 	char req[256] = {0};
-	snprintf(req, 256, "{\"cmd\":2,\"sn\":\"%s\",\"pub-ip\":\"%s\",\"pri-ip\":\"%s\",\"online\":%d}", 
-		serverSn, pub_ip, pri_ip, online);
+	snprintf(req, 256, "{\"cmd\":2,\"relaysn\":\"%s\",\"sn\":\"%s\",\"pub-ip\":\"%s\",\"pri-ip\":\"%s\",\"online\":%d}", 
+		relaySn, serverSn, pub_ip, pri_ip, online);
 	std::string reqStr = req;
 	std::string responseStr;
 
@@ -314,7 +308,7 @@ int CWebApi::_parseServerList(struct json_object *listObj)
 	    }
 
 	    /*添加服务器配置*/
-	    g_SrvCfgMgr->add_server_cfg(&srvCfg);
+	    this->addServerCfg(&srvCfg);
 	}
 
 	return 0;
@@ -392,3 +386,69 @@ int CWebApi::getRelayConfig(char *relaySn)
 	return ret;
 }
 
+int CWebApi::getRelayServerIpPort(char *relay_ipstr, short *relay_port)
+{
+	char urlreq[256] = {0};
+	snprintf(urlreq, 256, "%s/getip", m_url.c_str());
+	std::string urlStr = urlreq;
+	std::string responseStr;
+
+	int ret = m_http_client.Get(urlStr, responseStr);
+	if (0 != ret)
+	{
+		_LOG_ERROR("http get relayip failed, url %s", urlreq);
+		return ret;
+	}
+
+	/*没有回应内容*/
+	if (responseStr.length() == 0)
+	{
+		_LOG_ERROR("len of response is zero for url %s.", urlreq);
+		return -1;
+	}
+
+	struct json_object *new_obj = NULL;
+	struct json_object *res_obj = NULL;
+	const char* res_str = NULL;
+
+	const char *response = responseStr.c_str();
+	_LOG_INFO("get response %s when get relay server ip and port", response);
+
+	/*
+	{
+	"ip":"202.*.*.10", //relay_server ip	
+	"port":22228 //relay_server port
+	}
+	*/
+	new_obj = json_tokener_parse(response);
+	if( is_error(new_obj))
+	{
+		_LOG_ERROR("recv str not json : %s", response);
+		return -1;
+	}
+
+	res_obj = json_object_object_get(new_obj, "ip");
+	if (NULL == res_obj)
+	{
+		json_object_put(new_obj);
+		_LOG_ERROR("response str has no ip field : %s", response);
+		return -1;
+	}
+	res_str = json_object_get_string(res_obj);
+	memset(relay_ipstr, 0, IP_DESC_LEN);
+	strncpy(relay_ipstr, res_str, IP_DESC_LEN);
+	_LOG_INFO("get relay server ip %s", relay_ipstr);
+
+	res_obj = json_object_object_get(new_obj, "port");
+	if (NULL == res_obj)
+	{
+		json_object_put(new_obj);
+		_LOG_ERROR("response str has no port field : %s", response);
+		return -1;
+	}
+	res_str = json_object_get_string(res_obj);
+	*relay_port = atoi(res_str);
+
+	json_object_put(new_obj);
+	return 0;
+}

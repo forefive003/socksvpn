@@ -56,7 +56,7 @@ void CServCfgMgr::server_post_keepalive()
         }
 
         /*通知平台*/
-        if(0 != g_webApi->postServerOnline(tmp_srvCfg->m_sn, tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip, TRUE))
+        if(0 != g_webApi->postServerOnline(g_relaysn, tmp_srvCfg->m_sn, tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip, TRUE))
         {
             _LOG_WARN("socksserver %s, localip %s failed to post keepalive to platform", tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
         }
@@ -65,13 +65,14 @@ void CServCfgMgr::server_post_keepalive()
     return;
 }
 
-int CServCfgMgr::server_online_handle(char *sn, CServerCfg *srvCfg)
+void CServCfgMgr::server_offline_handle(char *sn, char *pub_ip, char *pri_ip)
 {
     if (is_relay_need_platform() == false)
     {
-        return 0;
+        return;
     }
 
+    bool is_found = false;
     CSERVCFG_LIST_Itr itr;
     CServerCfg *tmp_srvCfg = NULL;
 
@@ -83,25 +84,88 @@ int CServCfgMgr::server_online_handle(char *sn, CServerCfg *srvCfg)
         tmp_srvCfg = *itr;
         if (tmp_srvCfg->is_self(sn))
         {
+            is_found = true;
+
+            if (tmp_srvCfg->m_is_add_by_packet)
+            {
+                _LOG_INFO("delete socksserver %s, localip %s for offline", tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
+  
+                /*如果是基于报文创建的,直接删除*/
+                m_objs.erase(itr);
+                delete tmp_srvCfg;
+            }
+            else
+            {
+                /*设置离线*/
+                tmp_srvCfg->set_online(FALSE);
+            }
+
+#if 0
+            /*通知平台*/
+            if(0 != g_webApi->postServerOnline(g_relaysn, srvCfg->m_sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip, FALSE))
+            {
+                _LOG_WARN("socksserver %s, localip %s failed to post platform", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
+            }
+#endif
+            break;
+        }
+    }
+
+    if (is_found == false)
+    {
+        _LOG_WARN("failed to get srv config for server sn %s when offline",sn);
+    }
+    MUTEX_UNLOCK(m_obj_lock);
+
+    return;
+}
+
+int CServCfgMgr::server_online_handle(char *sn, char *pub_ip, char *pri_ip, CServerCfg *srvCfg)
+{
+    if (is_relay_need_platform() == false)
+    {
+        return 0;
+    }
+
+    bool is_found = false;
+    CSERVCFG_LIST_Itr itr;
+    CServerCfg *tmp_srvCfg = NULL;
+
+    MUTEX_LOCK(m_obj_lock);
+    for (itr = m_objs.begin();
+            itr != m_objs.end();
+            itr++)
+    {
+        tmp_srvCfg = *itr;
+        if (tmp_srvCfg->is_self(sn))
+        {
+            is_found = true;
+
             /*设置在线*/
             tmp_srvCfg->set_online(TRUE);
 
             /*拷贝配置*/
             *srvCfg = *tmp_srvCfg;
-            MUTEX_UNLOCK(m_obj_lock);
-
-            /*通知平台*/
-            if(0 != g_webApi->postServerOnline(sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip, TRUE))
-            {
-                _LOG_WARN("socksserver %s, localip %s failed to post platform", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
-            }
-            return 0;
+            break;
         }
+    }
+
+    if (is_found == false)
+    {
+        _LOG_WARN("failed to get srv config for server sn %s",sn);
+        /*添加一个配置*/
+        tmp_srvCfg = add_server_cfg_by_pkt(sn, pub_ip, pri_ip);
+        /*拷贝配置*/
+        *srvCfg = *tmp_srvCfg;
     }
     MUTEX_UNLOCK(m_obj_lock);
 
-    _LOG_WARN("failed to get srv config for server sn %s",sn);
-    return -1;
+    /*通知平台*/
+    if(0 != g_webApi->postServerOnline(g_relaysn, srvCfg->m_sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip, TRUE))
+    {
+        _LOG_WARN("socksserver %s, localip %s failed to post platform", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
+    }
+    return 0;
 }
 
 CServerCfg* CServCfgMgr::find_server_cfg(char *sn)
@@ -120,6 +184,22 @@ CServerCfg* CServCfgMgr::find_server_cfg(char *sn)
         }
     }
     return NULL;
+}
+
+/*在锁内调用*/
+CServerCfg* CServCfgMgr::add_server_cfg_by_pkt(char *sn, char *pub_ip, char *pri_ip)
+{
+    _LOG_INFO("add new server cfg by pkt: SN %s, pubip %s, priip %s", 
+        sn, pub_ip, pri_ip);
+
+    CServerCfg *tmp_srvCfg = new CServerCfg;
+    m_objs.push_back(tmp_srvCfg);
+
+    tmp_srvCfg->set_online(true);
+    tmp_srvCfg->set_created_pkt_flag(true);
+    tmp_srvCfg->set_sn_and_ip(sn, pub_ip, pri_ip);
+
+    return tmp_srvCfg;
 }
 
 int CServCfgMgr::add_server_cfg(CServerCfg *srvCfg)
@@ -142,9 +222,8 @@ int CServCfgMgr::add_server_cfg(CServerCfg *srvCfg)
         MUTEX_UNLOCK(m_obj_lock);
     }
     
-    memcpy(tmp_srvCfg->m_sn, srvCfg->m_sn, MAX_SN_LEN);
-    memcpy(tmp_srvCfg->m_pub_ip, srvCfg->m_pub_ip, IP_DESC_LEN);
-    memcpy(tmp_srvCfg->m_pri_ip, srvCfg->m_pri_ip, IP_DESC_LEN);
+    tmp_srvCfg->set_created_pkt_flag(false);
+    tmp_srvCfg->set_sn_and_ip(srvCfg->m_sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip);
 
     tmp_srvCfg->m_acct_cnt = srvCfg->m_acct_cnt;
     memcpy(tmp_srvCfg->m_acct_infos, srvCfg->m_acct_infos, sizeof(srvCfg->m_acct_infos));

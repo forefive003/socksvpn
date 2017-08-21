@@ -19,7 +19,7 @@
 #include "CSocksMem.h"
 #include "utilfile.h"
 #include "CServerCfg.h"
-#include "CWebApi.h"
+#include "CWebApiRelay.h"
 #include "CConfigServer.h"
 
 uint16_t g_client_port = DEF_RELAY_CLI_PORT;
@@ -241,15 +241,12 @@ static void _post_timer_callback(void* param1, void* param2,
                 void* param3, void* param4)
 {
     /*通知平台relay上线*/
-    if (is_relay_need_platform())
+    if(0 != g_webApi->postRelayOnline(g_relaysn, g_relay_passwd, g_server_port))
     {
-        if(0 != g_webApi->postRelayOnline(g_relaysn, g_relay_passwd))
-        {
-            _LOG_WARN("relay post platform failed");
-        }
-
-        g_SrvCfgMgr->server_post_keepalive();
+        _LOG_WARN("relay post platform failed");
     }
+
+    g_SrvCfgMgr->server_post_keepalive();
 }
 
 int main(int argc, char **argv)
@@ -284,7 +281,7 @@ int main(int argc, char **argv)
     g_ConnMgr = CConnMgr::instance();
     g_SocksSrvMgr = CSocksSrvMgr::instance();
     g_ClientNetMgr = CClientNetMgr::instance();
-    g_webApi = CWebApi::instance(g_relay_url);
+    g_webApi = CWebApiRelay::instance(g_relay_url);
     g_SrvCfgMgr = CServCfgMgr::instance();
 
     g_ClientServ = CClientServer::instance(g_client_port);
@@ -314,7 +311,7 @@ int main(int argc, char **argv)
     /*通知平台relay上线*/
     if (is_relay_need_platform())
     {
-        if(0 != g_webApi->postRelayOnline(g_relaysn, g_relay_passwd))
+        if(0 != g_webApi->postRelayOnline(g_relaysn, g_relay_passwd, g_server_port))
         {
             _LOG_WARN("relay post platform failed");
         }
@@ -327,7 +324,11 @@ int main(int argc, char **argv)
     }
 
     np_add_time_job(_timer_callback, NULL, NULL, NULL, NULL, 10, FALSE);
-    np_add_time_job(_post_timer_callback, NULL, NULL, NULL, NULL, 30, FALSE);
+    if (is_relay_need_platform())
+    {
+        np_add_time_job(_post_timer_callback, NULL, NULL, NULL, NULL, 30, FALSE);
+    }
+    
     np_start();
     while(g_exit == false)
     {

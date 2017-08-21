@@ -12,6 +12,8 @@
 #include "sigproc.h"
 #include "CSocksMem.h"
 #include "utilfile.h"
+#include "CWebApi.h"
+
 
 char g_relay_ipstr[HOST_IP_LEN + 1] = {0};
 char g_relay_domain[HOST_DOMAIN_LEN + 1] = {0};
@@ -31,12 +33,12 @@ static void Usage(char *program)
     printf("Usage: params of %s \n", program);
     printf("%-8s -h for help\n", "");
     printf("%-8s -r <relay server ip>\n", "");
-    printf("%-8s -d <relay server domain name>\n", "");
+    printf("%-8s -a <the url of manager plain, for example: http://www.domain.com/api>\n", "");
     printf("%-8s -p <relay server port>\n", "");
     printf("%-8s -m <xor|rc4>, Don't take this option when needn't encrypt data\n", "");
     printf("%-8s -e <encrypt key>\n", "");
     printf("%-8s -n <the sn of server, max 32 bytes len, for example: AABBCCDD002233bb>\n", "");
-    printf("%-8s -l <0|log_level(debug:1,info:2,warn:3,error:4)>, 0:not write log, otherwith write log\n", "");
+    printf("%-8s -d <0|log_level(debug:1,info:2,warn:3,error:4)>, 0:not write log, otherwith write log\n", "");
 }
 
 
@@ -55,13 +57,13 @@ static int cmd_parser(int argc, char *argv[])
     struct sockaddr_storage ipaddr;
     size_t key_len;
 
-    while ((opt = getopt(argc, argv, "hr:d:p:m:e:n:l:")) != -1) {
+    while ((opt = getopt(argc, argv, "hr:a:p:m:e:n:d:")) != -1) {
         switch (opt) {
         case 'h':
             Usage(argv[0]);
             return -1;
             break;
-        case 'l':
+        case 'd':
             g_is_log = atoi(optarg);
             break;
         case 'n':
@@ -80,7 +82,7 @@ static int cmd_parser(int argc, char *argv[])
             g_relay_ip = htonl(((struct sockaddr_in *)&ipaddr)->sin_addr.s_addr);
             printf("get option: relay server ip %s\n", g_relay_ipstr);
             break;
-        case 'd':
+        case 'a':
             strncpy(g_relay_domain, optarg, HOST_DOMAIN_LEN);
             printf("get option: relay server domain %s\n", g_relay_domain);
             break;
@@ -268,12 +270,46 @@ static void _timer_callback(void* param1, void* param2,
     MUTEX_LOCK(m_local_srv_lock);
     if (NULL == g_LocalServ)
     {
-        g_LocalServ = new CLocalServer(g_relay_ip, g_relay_port);
-        g_LocalServ->init_async_write_resource(socks_malloc, socks_free);
-        if(0 != g_LocalServ->init())
+        /*如果是根据域名,先获取relay ip和端口*/
+        if (g_relay_domain[0] != 0)
         {
-            delete g_LocalServ;
-            g_LocalServ = NULL;
+            g_relay_ip = 0;
+            g_relay_port = 0;
+
+            struct sockaddr_storage ipaddr;
+            char relay_ipstr[HOST_IP_LEN + 1] = {0};
+            short relay_port = 0;
+            if (0 != g_webApi->getRelayServerIpPort(relay_ipstr, &relay_port))
+            {
+                _LOG_WARN("get relay ip port from %s failed", g_relay_domain);
+                printf("get relay ip port from %s failed\n", g_relay_domain);
+            }
+            else
+            {
+                strncpy(g_relay_ipstr, relay_ipstr, HOST_IP_LEN);
+                if (0 != util_str_to_ip(g_relay_ipstr, &ipaddr))
+                {
+                    _LOG_WARN("Invalid relay server %s", g_relay_ipstr);
+                }
+                else
+                {
+                    g_relay_ip = htonl(((struct sockaddr_in *)&ipaddr)->sin_addr.s_addr);
+                    g_relay_port = relay_port;
+                    _LOG_INFO("get relay server from platform: %s:%u", g_relay_ipstr, g_relay_port);
+                    printf("get relay ip port from %s: %s/%d\n", g_relay_domain, g_relay_ipstr, g_relay_port);
+                }
+            }
+        }
+
+        if (g_relay_ip != 0)
+        {
+            g_LocalServ = new CLocalServer(g_relay_ip, g_relay_port);
+            g_LocalServ->init_async_write_resource(socks_malloc, socks_free);
+            if(0 != g_LocalServ->init())
+            {
+                delete g_LocalServ;
+                g_LocalServ = NULL;
+            }
         }
     }
     else
@@ -296,29 +332,6 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    if (g_relay_domain[0] != 0)
-    {
-        printf("get ip for relay server, domain %s\n", g_relay_domain);
-        if( 0!= util_gethostbyname(g_relay_domain, &g_relay_ip))
-        {
-            printf("get domain of relay server failed, domain %s\n", g_relay_domain);
-            return -1;
-        }
-    }
-
-    struct sockaddr_storage ipaddr;
-    char ipstr[64] = { 0 };
-    memset((void*) &ipaddr, 0, sizeof(struct sockaddr_storage));
-    ipaddr.ss_family = AF_INET;
-    ((struct sockaddr_in *) &ipaddr)->sin_addr.s_addr = htonl(g_relay_ip);
-    if (NULL == util_ip_to_str(&ipaddr, ipstr)) 
-    {
-        printf("ip to str failed for relay server.\n");
-        return -1;
-    }
-    strncpy(g_relay_ipstr, ipstr, HOST_IP_LEN);
-    printf("relay server: %s:%u\n", g_relay_ipstr, g_relay_port);
-    
     register_signal();
 
 	loggger_init((char*)("/tmp/"), (char*)("socks_server"), 1 * 1024, 6, true);
@@ -357,6 +370,52 @@ int main(int argc, char **argv)
 #endif
 
     g_ConnMgr = CConnMgr::instance();
+    g_webApi = CWebApi::instance(g_relay_domain);
+
+    if (g_relay_domain[0] != 0)
+    {
+        g_relay_ip = 0;
+        g_relay_port = 0;
+
+        struct sockaddr_storage ipaddr;
+        char relay_ipstr[HOST_IP_LEN + 1] = {0};
+        short relay_port = 0;
+        if (0 != g_webApi->getRelayServerIpPort(relay_ipstr, &relay_port))
+        {
+            _LOG_WARN("get relay ip port from %s failed", g_relay_domain);
+            printf("get relay ip port from %s failed\n", g_relay_domain);
+        }
+        else
+        {
+            strncpy(g_relay_ipstr, relay_ipstr, HOST_IP_LEN);
+            if (0 != util_str_to_ip(g_relay_ipstr, &ipaddr))
+            {
+                _LOG_WARN("Invalid relay server %s", g_relay_ipstr);
+            }
+            else
+            {
+                g_relay_ip = htonl(((struct sockaddr_in *)&ipaddr)->sin_addr.s_addr);
+                g_relay_port = relay_port;
+                _LOG_INFO("get relay server from platform: %s:%u", g_relay_ipstr, g_relay_port);
+                printf("get relay ip port from %s: %s/%d\n", g_relay_domain, g_relay_ipstr, g_relay_port);
+            }
+        }
+    }
+    else
+    {
+        struct sockaddr_storage ipaddr;
+        char ipstr[64] = { 0 };
+        memset((void*) &ipaddr, 0, sizeof(struct sockaddr_storage));
+        ipaddr.ss_family = AF_INET;
+        ((struct sockaddr_in *) &ipaddr)->sin_addr.s_addr = htonl(g_relay_ip);
+        if (NULL == util_ip_to_str(&ipaddr, ipstr)) 
+        {
+            printf("ip to str failed for relay server.\n");
+            return -1;
+        }
+        strncpy(g_relay_ipstr, ipstr, HOST_IP_LEN);
+        printf("relay server: %s:%u\n", g_relay_ipstr, g_relay_port);
+    }
 
     /*start check timer*/
     np_add_time_job(_timer_callback, NULL, NULL, NULL, NULL, 1, FALSE);

@@ -8,6 +8,7 @@
 #include "CSocksSrvMgr.h"
 #include "socks_relay.h"
 #include "CSocksMem.h"
+#include "CServerCfg.h"
 #include "CWebApi.h"
 
 int CSocksSrv::msg_srv_reg_handle(char *data_buf, int data_len)
@@ -48,7 +49,7 @@ int CSocksSrv::msg_srv_reg_handle(char *data_buf, int data_len)
         this->set_inner_info(srvReg->local_ip, srvReg->local_port);
 
         /*上线处理*/
-        g_SrvCfgMgr->server_online_handle(srvReg->sn, &this->m_srvCfg);
+        g_SrvCfgMgr->server_online_handle(srvReg->sn, m_ipstr, m_inner_ipstr, &this->m_srvCfg);
     }
 
     this->m_update_time = util_get_cur_time();
@@ -306,6 +307,9 @@ int CSocksSrv::recv_handle(char *buf, int buf_len)
 
 void CSocksSrv::free_handle()
 {
+    /*下线处理*/
+    g_SrvCfgMgr->server_offline_handle(m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
+    
     g_SocksSrvMgr->del_socks_server(this);
     delete this;
 }

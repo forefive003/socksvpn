@@ -11,6 +11,7 @@
 #include "CSocksSrv.h"
 #include "CSocksSrvMgr.h"
 #include "socks_relay.h"
+#include "CWebApi.h"
 
 int CClient::send_remote_close_msg()
 {
