@@ -16,12 +16,34 @@
 
 int CClientNet::send_auth_result_msg(BOOL auth_ok)
 {
-    char resp_buf[2] = {0x01, 0x00};
+    char resp_buf[2 + 4 + 4*32] = {0};
+
+    resp_buf[0] = 0x01;
     if (!auth_ok)
     {
         resp_buf[1] = 0x01;
     }
+    else
+    {
+        resp_buf[1] = 0x00;
+    }
 
+    int srv_ip_array[32] = {0};
+    int srvs_cnt = g_SocksSrvMgr->get_srv_ip_array(srv_ip_array);
+    if (srvs_cnt > 32) srvs_cnt = 32;
+
+    int *ptmp = (int*)&resp_buf[2];
+    *ptmp = htonl(srvs_cnt);
+    ptmp++;
+
+    for (int ii = 0; ii < srvs_cnt; ii++)
+    {
+        *ptmp = htonl(srv_ip_array[ii]);
+        ptmp++;
+    }
+
+    int resp_len = 2 + 4 + srvs_cnt*4;
+    
     PKT_HDR_T pkthdr;
     PKT_R2C_HDR_T r2chdr;
 
@@ -29,7 +51,8 @@ int CClientNet::send_auth_result_msg(BOOL auth_ok)
     memset(&r2chdr, 0, sizeof(PKT_R2C_HDR_T));
 
     pkthdr.pkt_type = PKT_R2C;
-    pkthdr.pkt_len = sizeof(PKT_R2C_HDR_T) + sizeof(resp_buf);
+    pkthdr.pkt_len = sizeof(PKT_R2C_HDR_T) + resp_len;
+    PKT_HDR_HTON(&pkthdr);
 
     r2chdr.server_ip = m_local_ipaddr;
     r2chdr.server_port = m_local_port;
@@ -37,6 +60,8 @@ int CClientNet::send_auth_result_msg(BOOL auth_ok)
     r2chdr.client_port = m_inner_port;
     r2chdr.sub_type = R2C_AUTH_RESULT;
     r2chdr.reserved = 0;
+
+    PKT_R2C_HDR_HTON(&r2chdr);
 
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
@@ -46,7 +71,7 @@ int CClientNet::send_auth_result_msg(BOOL auth_ok)
     {
         return -1;
     }
-    if(0 != this->send_data(resp_buf, sizeof(resp_buf)))
+    if(0 != this->send_data(resp_buf, resp_len))
     {
         return -1;
     }
@@ -188,17 +213,8 @@ int CClientNet::msg_auth_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_
     {
         g_SocksSrvMgr->unlock();
 
-        struct sockaddr_storage ipaddr;
         char ipstr[64] = { 0 };
-
-        memset((void*) &ipaddr, 0, sizeof(struct sockaddr_storage));
-        ipaddr.ss_family = AF_INET;
-        ((struct sockaddr_in *) &ipaddr)->sin_addr.s_addr = htonl(c2rhdr->server_ip);
-        if (NULL == util_ip_to_str(&ipaddr, ipstr)) 
-        {
-            _LOG_ERROR("ip to str failed.");
-            return -1;
-        }
+        engine_ipv4_to_str(htonl(c2rhdr->server_ip), ipstr);
         _LOG_ERROR("no server with user %s has registered on serverip %s", username, ipstr);
 
         /*response to client, auth failed*/
@@ -333,7 +349,10 @@ int CClientNet::pdu_handle(char *pdu_buf, int pdu_len)
 {
     int ret = 0;
     PKT_HDR_T *pkthdr = (PKT_HDR_T*)pdu_buf;
+
     PKT_C2R_HDR_T *c2rhdr = (PKT_C2R_HDR_T*)(pdu_buf + sizeof(PKT_HDR_T));
+    PKT_C2R_HDR_NTOH(c2rhdr);
+    
     char *data_buf = NULL;
     int data_len = 0;
     if (pkthdr->pkt_type != PKT_C2R)
@@ -405,15 +424,17 @@ int CClientNet::recv_handle(char *buf, int buf_len)
         }
 
         PKT_HDR_T *pkthdr = (PKT_HDR_T*)m_recv_buf;
+        PKT_HDR_NTOH(pkthdr);
         if (pkthdr->pkt_len > (sizeof(m_recv_buf) - sizeof(PKT_HDR_T)))
         {
-            _LOG_ERROR("cur recv %d, but pktlen %u too long", m_recv_len, pkthdr->pkt_len);
+            _LOG_ERROR("cur recv %d, but pktlen %u too long in client", m_recv_len, pkthdr->pkt_len);
             return -1;
         }
 
         if (m_recv_len < (int)(sizeof(PKT_HDR_T) + pkthdr->pkt_len))
         {
             _LOG_DEBUG("cur recv %d, need %d, wait for data", m_recv_len, (sizeof(PKT_HDR_T) + pkthdr->pkt_len));
+            PKT_HDR_HTON(pkthdr);
             return 0;
         }
 
@@ -464,14 +485,7 @@ void CClientNet::set_inner_info(uint32_t inner_ipaddr, uint16_t inner_port)
     m_inner_ipaddr = inner_ipaddr;
     m_inner_port = inner_port;
 
-    struct sockaddr_storage ipaddr_s;
-    memset((void*) &ipaddr_s, 0, sizeof(struct sockaddr_storage));
-    ipaddr_s.ss_family = AF_INET;
-    ((struct sockaddr_in *) &ipaddr_s)->sin_addr.s_addr = htonl(inner_ipaddr);
-    if (NULL == util_ip_to_str(&ipaddr_s, m_inner_ipstr)) 
-    {
-        _LOG_ERROR("ip to str failed.");
-    }
+    engine_ipv4_to_str(htonl(inner_ipaddr), m_inner_ipstr);
     m_inner_ipstr[HOST_IP_LEN] = 0;
 
     _LOG_INFO("set clientSrv(%s/%u) inner info: %s/%u", m_ipstr, m_port,

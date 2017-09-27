@@ -24,6 +24,7 @@ public:
     void lock();
     void unlock();
     void print_statistic(FILE *pFd);
+    int get_srv_ip_array(int *serv_array);
     #if 0
     int output_socks_server(char *resp_buf, int buf_len);
     #endif

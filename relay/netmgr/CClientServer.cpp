@@ -38,7 +38,7 @@ int CClientServer::accept_handle(int conn_fd, uint32_t client_ip, uint16_t clien
     setsockopt(conn_fd, SOL_TCP, TCP_KEEPCNT, (void *)&keepcount , sizeof(keepcount ));
 
     CClientNet *clientNet = new CClientNet(client_ip, client_port, conn_fd);
-    clientNet->init_async_write_resource(socks_malloc, socks_free);
+//    clientNet->init_async_write_resource(socks_malloc, socks_free);
     if (0 != clientNet->init())
     {
         delete clientNet;

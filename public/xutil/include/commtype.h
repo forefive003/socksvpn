@@ -14,38 +14,43 @@
 #include <string.h>
 #include <inttypes.h>
 
+#ifdef _WIN32
+
+#if defined(DLL_EXPORT_NP) //only include windows.h in netpool.dll
+#include <windows.h>
+#endif
+
+#include "stdafx.h"
+#include <direct.h>
+#include <io.h>
+#else
+#include <unistd.h>
+#include <sys/stat.h>
+#include <stdint.h> //has uint64_t defined
+#endif
+
+#ifdef _WIN32
+#if  defined(DLL_EXPORT_NP)
+#define DLL_API __declspec(dllexport)
+#elif defined(DLL_IMPORT_NP)
+#define DLL_API __declspec(dllimport)
+#else
+#define DLL_API 
+#endif
+
+#pragma warning( disable : 4200 ) /*data[0] is illegal in windows*/
+#define _COM_TYPES_
+
+#else
+#define DLL_API extern
+#endif
+
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-
-#ifdef _WIN32
-#include <windows.h>
-#include "stdafx.h"
-#include <direct.h>
-#include <io.h>
-#ifdef ETP_DLL_EXPORT
-#define DLL_API __declspec(dllexport)
-#elif defined(ETP_USE_DLL)
-#define DLL_API __declspec(dllimport)
-#elif defined(ETP_USE_LIB)
-#define DLL_API 
-#else
-#define DLL_API 
-#endif
-
-#else
-#include <unistd.h>
-#include <sys/stat.h>
-#include <stdint.h> //has uint64_t defined
-#define DLL_API extern
-#endif
-
-
-#ifdef _WIN32
-#define _COM_TYPES_
-#endif
 
 #ifndef _COM_TYPES_
 typedef int 			BOOL;
@@ -78,9 +83,6 @@ typedef unsigned int    uint32_t;
 #endif
 
 #endif
-
-#define inline __inline
-
 
 
 #ifdef _WIN32
@@ -127,6 +129,8 @@ static inline char* str_error_s(char *err_buf, unsigned int len, int errnum)
 
 #else
 
+#define inline __inline
+
 #define MUTEX_TYPE            pthread_mutex_t
 #define MUTEX_SETUP(x)        pthread_mutex_init(&(x), NULL)
 #define MUTEX_SETUP_ATTR(x, attr)  pthread_mutex_init(&(x), attr)
@@ -167,8 +171,5 @@ static inline uint64_t util_get_cur_time()
 #ifdef __cplusplus
 }
 #endif
-
-
-
 
 #endif /* COMMONTYPE_H_ */

@@ -31,12 +31,14 @@ int CRemote::send_client_close_msg()
 
     pkthdr.pkt_type = PKT_R2S;
     pkthdr.pkt_len = sizeof(PKT_R2S_HDR_T);
+    PKT_HDR_HTON(&pkthdr);
 
     r2shdr.client_pub_ip = pConn->get_client_ipaddr();
     r2shdr.client_pub_port = pConn->get_client_port();
     r2shdr.client_inner_ip = pConn->get_client_inner_ipaddr();
     r2shdr.client_inner_port = pConn->get_client_inner_port();
     r2shdr.sub_type = CLIENT_CLOSED;
+    PKT_R2S_HDR_HTON(&r2shdr);
 
     if(0 != socksSrv->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
@@ -81,12 +83,14 @@ int CRemote::send_client_connect_msg(char *buf, int buf_len)
 
     pkthdr.pkt_type = PKT_R2S;
     pkthdr.pkt_len = sizeof(PKT_R2S_HDR_T) + buf_len;
+    PKT_HDR_HTON(&pkthdr);
 
     r2shdr.client_pub_ip = pConn->get_client_ipaddr();
     r2shdr.client_pub_port = pConn->get_client_port();
     r2shdr.client_inner_ip = pConn->get_client_inner_ipaddr();
     r2shdr.client_inner_port = pConn->get_client_inner_port();
     r2shdr.sub_type = R2S_CLIENT_CONNECT;
+    PKT_R2S_HDR_HTON(&r2shdr);
 
     if(0 != socksSrv->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
@@ -136,12 +140,14 @@ int CRemote::send_data_msg(char *buf, int buf_len)
 
     pkthdr.pkt_type = PKT_R2S;
     pkthdr.pkt_len = sizeof(PKT_R2S_HDR_T) + buf_len;
+    PKT_HDR_HTON(&pkthdr);
 
     r2shdr.client_pub_ip = pConn->get_client_ipaddr();
     r2shdr.client_pub_port = pConn->get_client_port();
     r2shdr.client_inner_ip = pConn->get_client_inner_ipaddr();
     r2shdr.client_inner_port = pConn->get_client_inner_port();
     r2shdr.sub_type = R2S_DATA;
+    PKT_R2S_HDR_HTON(&r2shdr);
 
     if(0 != socksSrv->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {

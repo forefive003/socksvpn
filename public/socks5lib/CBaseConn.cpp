@@ -17,6 +17,11 @@ CBaseConnection::CBaseConnection()
     m_send_client_data_cnt = 0;
     m_send_remote_data_cnt = 0;
 
+    m_send_client_bytes = 0;
+    m_send_remote_bytes = 0;
+
+    m_setup_time = util_get_cur_time();
+    
     MUTEX_SETUP(m_ref_lock);
 
 #ifndef _WIN32
@@ -142,6 +147,8 @@ int CBaseConnection::fwd_client_data_msg(char *buf, int buf_len)
             m_client->m_inner_ipstr, m_client->m_inner_port,
             m_client->get_fd(), buf_len);
         m_send_client_data_cnt++;
+        m_send_client_bytes+=buf_len;
+
         g_total_data_req_cnt++;
     }
     else
@@ -167,6 +174,8 @@ int CBaseConnection::fwd_remote_data_msg(char *buf, int buf_len)
             m_client->m_inner_ipstr, m_client->m_inner_port,
             m_client->get_fd(), buf_len);
         m_send_remote_data_cnt++;
+        m_send_remote_bytes+=buf_len;
+
         g_total_data_resp_cnt++;
     }
     else

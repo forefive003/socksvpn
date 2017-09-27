@@ -37,7 +37,10 @@ public:
     void set_inner_info(uint32_t inner_ipaddr, uint16_t inner_port);
     uint32_t get_inner_ipaddr();
     uint16_t get_inner_port();
-    virtual int send_remote_close_msg() = 0 ;
+    virtual int send_remote_close_msg()
+    {
+        return 0;
+    }
 public:
     uint32_t m_inner_ipaddr;
     uint16_t m_inner_port;
@@ -51,7 +54,10 @@ public:
     CBaseRemote(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection *conn);
     virtual ~CBaseRemote();
 
-    virtual int send_client_close_msg() = 0 ;
+    virtual int send_client_close_msg()
+    {
+        return 0;
+    }
 public:
     void free_handle();
 };

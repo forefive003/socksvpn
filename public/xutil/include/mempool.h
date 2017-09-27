@@ -2,46 +2,57 @@
 #define MEMPOOL_H_
 
 #include "list.h"
+#include "commtype.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 typedef struct
 {
 	struct list_head node;
-	unsigned char data[0]; /*åé¢ä¸ºkey + obj*/
+	unsigned char data[0]; /*ºóÃæÎªkey + obj*/
 }MEM_NODE_T;
 
 
 typedef struct
 {
-	/*èŠ‚ç‚¹ä¸ªæ•°*/
+	/*½Úµã¸öÊı*/
 	unsigned int m_node_cnt;
-	/*èŠ‚ç‚¹å¤§å°*/
+	/*½Úµã´óĞ¡*/
 	unsigned int m_node_size;
-	/*åˆå§‹åŒ–å‡½æ•°*/
+	/*³õÊ¼»¯º¯Êı*/
 	void (*node_init_func)(char*);
 
-	/*å†…å­˜æ± */
+	/*ÄÚ´æ³Ø*/
 	char *m_baseaddr;
 
-	/*å¯ç”¨èŠ‚ç‚¹æ± å †æ ˆ*/
+	/*¿ÉÓÃ½Úµã³Ø¶ÑÕ»*/
 	MEM_NODE_T **m_stack;
-	/*èŠ‚ç‚¹æ± å †æ ˆå½“å‰ä½ç½®*/
+	/*½Úµã³Ø¶ÑÕ»µ±Ç°Î»ÖÃ*/
 	unsigned int m_stack_idx;
 }MEM_POOL_T;
 
 
-int mpool_init(MEM_POOL_T *pool,
+DLL_API int mpool_init(MEM_POOL_T *pool,
 		unsigned int obj_max_cnt,
 		unsigned int node_size);
 
-void mpool_destroy(MEM_POOL_T *pool);
-void mpool_reset(MEM_POOL_T *pool);
+DLL_API void mpool_destroy(MEM_POOL_T *pool);
+DLL_API void mpool_reset(MEM_POOL_T *pool);
 
-MEM_NODE_T* mpool_new_obj(MEM_POOL_T *pool);
-void mpool_free_obj(MEM_POOL_T *pool, MEM_NODE_T *node);
+DLL_API MEM_NODE_T* mpool_new_obj(MEM_POOL_T *pool);
+DLL_API void mpool_free_obj(MEM_POOL_T *pool, MEM_NODE_T *node);
 
-void* mpool_malloc(MEM_POOL_T *pool);
-void mpool_free(MEM_POOL_T *pool, void *ptr);
+DLL_API void* mpool_malloc(MEM_POOL_T *pool);
+DLL_API void mpool_free(MEM_POOL_T *pool, void *ptr);
 
-unsigned int mpoll_get_used_cnt(MEM_POOL_T *pool);
+DLL_API unsigned int mpoll_get_used_cnt(MEM_POOL_T *pool);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MEMPOOL_H_ */

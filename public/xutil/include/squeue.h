@@ -3,11 +3,18 @@
 #define _S_QUEUE_H
 
 #include "list.h"
+#include "commtype.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 typedef struct s_queue_head
 {
-	struct list_head *first;  /*æ‰§è¡Œç¬¬ä¸€ä¸ªèŠ‚ç‚¹*/
-	struct list_head **last_addr; /*æœ€åä¸€ä¸ªèŠ‚ç‚¹çš„åœ°å€*/
+	struct list_head *first;  /*Ö´ĞĞµÚÒ»¸ö½Úµã*/
+	struct list_head **last_addr; /*×îºóÒ»¸ö½ÚµãµÄµØÖ·*/
 }sq_head_t;
 
 #define SQUEUE_EMPTY(head) (NULL == (head)->first)
@@ -26,7 +33,7 @@ static inline void squeue_copy(sq_head_t *dst, sq_head_t *src)
 {
 	if (src->first)
 	{
-		/*æœ‰å…ƒç´ ï¼Œå°†å…ƒç´ çš„prevä¿®æ”¹*/
+		/*ÓĞÔªËØ£¬½«ÔªËØµÄprevĞŞ¸Ä*/
 		dst->first = src->first;
 		dst->last_addr = src->last_addr;
 
@@ -34,14 +41,14 @@ static inline void squeue_copy(sq_head_t *dst, sq_head_t *src)
 	}
 	else
 	{
-		/*å¦åˆ™åˆå§‹åŒ–ä¸ºç©ºè¡¨*/
+		/*·ñÔò³õÊ¼»¯Îª¿Õ±í*/
 		SQUEUE_INIT_HEAD(dst);
 	}
 }
 
 static inline void squeue_inq(struct list_head *elment, struct s_queue_head *head)
 {
-	/*æ’å…¥åˆ°å°¾éƒ¨*/
+	/*²åÈëµ½Î²²¿*/
 	elment->next = NULL;
 	elment->prev = (struct list_head*)head->last_addr;
 	*head->last_addr = elment;
@@ -61,7 +68,7 @@ static inline void squeue_insert_prev(struct s_queue_head *head,
 
 	if(tmp_node == (struct list_head*)(&head->first))
 	{
-		/*æ­¤é˜Ÿåˆ—å½“å‰åªæœ‰ä¸€ä¸ªèŠ‚ç‚¹ï¼Œå³æ’å…¥åˆ°å¤´èŠ‚ç‚¹å¤„*/
+		/*´Ë¶ÓÁĞµ±Ç°Ö»ÓĞÒ»¸ö½Úµã£¬¼´²åÈëµ½Í·½Úµã´¦*/
 		head->first = node;
 	}
 	else
@@ -74,7 +81,7 @@ static inline struct list_head* squeue_deq(struct s_queue_head *head)
 {
 	struct list_head *ret = NULL;
 
-	/*ä»å¤´éƒ¨å–èŠ‚ç‚¹*/
+	/*´ÓÍ·²¿È¡½Úµã*/
 	ret = head->first;
 	if (NULL == ret)
 	{
@@ -83,12 +90,12 @@ static inline struct list_head* squeue_deq(struct s_queue_head *head)
 
 	if(NULL == (head->first = head->first->next))
 	{
-		/*å¦‚æœå–ç©ºäº†ï¼Œé‡æ–°èµ‹å€¼last*/
+		/*Èç¹ûÈ¡¿ÕÁË£¬ÖØĞÂ¸³Öµlast*/
 		head->last_addr = &head->first;
 	}
 	else
 	{
-		/*å°†ä¸‹ä¸€ä¸ªèŠ‚ç‚¹çš„prevæŒ‡å‘è‡ªå·±çš„prev*/
+		/*½«ÏÂÒ»¸ö½ÚµãµÄprevÖ¸Ïò×Ô¼ºµÄprev*/
 		ret->next->prev = ret->prev;
 	}
 
@@ -101,7 +108,7 @@ static inline struct list_head* squeue_deq_condition(struct s_queue_head *head,
 {
 	struct list_head *ret = NULL;
 
-	/*ä»å¤´éƒ¨å–èŠ‚ç‚¹*/
+	/*´ÓÍ·²¿È¡½Úµã*/
 	ret = head->first;
 	if (NULL == ret)
 	{
@@ -115,12 +122,12 @@ static inline struct list_head* squeue_deq_condition(struct s_queue_head *head,
 
 	if(NULL == (head->first = head->first->next))
 	{
-		/*å¦‚æœå–ç©ºäº†ï¼Œé‡æ–°èµ‹å€¼last*/
+		/*Èç¹ûÈ¡¿ÕÁË£¬ÖØĞÂ¸³Öµlast*/
 		head->last_addr = &head->first;
 	}
 	else
 	{
-		/*å°†ä¸‹ä¸€ä¸ªèŠ‚ç‚¹çš„prevæŒ‡å‘è‡ªå·±çš„prev*/
+		/*½«ÏÂÒ»¸ö½ÚµãµÄprevÖ¸Ïò×Ô¼ºµÄprev*/
 		ret->next->prev = ret->prev;
 	}
 
@@ -134,7 +141,7 @@ static inline struct list_head* squeue_get_first(struct s_queue_head *head)
 
 static inline struct list_head* squeue_get_tail(struct s_queue_head *head)
 {
-	/*é“¾è¡¨å°¾éƒ¨ä¸ºé˜Ÿåˆ—å°¾*/
+	/*Á´±íÎ²²¿Îª¶ÓÁĞÎ²*/
 	if (NULL == head->first)
 	{
 		return NULL;
@@ -185,7 +192,7 @@ static inline void squeue_walk(struct s_queue_head *head,
 
 #include "nfs_atomic.h"
 
-/*è¯»è€…å’Œå†™è€…éƒ½åªæœ‰ä¸€ä¸ªï¼Œæ¯”å¤šè¯»å¤šå†™çš„æ— é”è¦ç®€å•å¾ˆå¤šï¼Œæ›´è¯¦ç»†çš„å®ç°è§
+/*¶ÁÕßºÍĞ´Õß¶¼Ö»ÓĞÒ»¸ö£¬±È¶à¶Á¶àĞ´µÄÎŞËøÒª¼òµ¥ºÜ¶à£¬¸üÏêÏ¸µÄÊµÏÖ¼û
  * http://www.cnblogs.com/catch/p/3164829.html*/
 typedef struct lock_free_q
 {
@@ -193,7 +200,7 @@ typedef struct lock_free_q
 	sq_node_t *tail;
 
 	nfs_atomic_t count;
-	unsigned long int max_count; //è®°å½•æœ€å¤§ä¸ªæ•°
+	unsigned long int max_count; //¼ÇÂ¼×î´ó¸öÊı
 }lock_free_q_t;
 
 #define LOCK_FREE_Q_CNT(queue)  nfs_atomic_read(&(queue)->count)
@@ -219,7 +226,7 @@ static inline int lock_free_queue_init(lock_free_q_t *queue)
 	queue->head = dummy;
 	queue->tail = dummy;
 	nfs_atomic_set(&queue->count, 0);
-	queue->max_count = 10000000; ///ç›¸å½“äºä¸é™åˆ¶å¤§å°
+	queue->max_count = 10000000; ///Ïàµ±ÓÚ²»ÏŞÖÆ´óĞ¡
 	return OKF;
 }
 
@@ -249,9 +256,9 @@ static inline void lock_free_queue_free(lock_free_q_t *queue)
 
 static inline int lock_free_force_enqueue(sq_node_t *new_node, lock_free_q_t *queue)
 {
-	//ä¸ç®¡å½“å‰å¤šå°‘ä¸ªèŠ‚ç‚¹ï¼Œéƒ½æ’å…¥
+	//²»¹Üµ±Ç°¶àÉÙ¸ö½Úµã£¬¶¼²åÈë
 
-	/*queue->tailå§‹ç»ˆéƒ½ä¼šå­˜åœ¨,ä¸”ä¸ä¸ºNULL*/
+	/*queue->tailÊ¼ÖÕ¶¼»á´æÔÚ,ÇÒ²»ÎªNULL*/
 	new_node->next = NULL;
 	queue->tail->next = new_node;
 	queue->tail = new_node;
@@ -268,7 +275,7 @@ static inline int lock_free_enqueue(sq_node_t *new_node, lock_free_q_t *queue)
 		return ERROR;
 	}
 
-	/*queue->tailå§‹ç»ˆéƒ½ä¼šå­˜åœ¨,ä¸”ä¸ä¸ºNULL*/
+	/*queue->tailÊ¼ÖÕ¶¼»á´æÔÚ,ÇÒ²»ÎªNULL*/
 	new_node->next = NULL;
 	queue->tail->next = new_node;
 	queue->tail = new_node;
@@ -281,7 +288,7 @@ static inline sq_node_t* lock_free_dequeue(lock_free_q_t *queue)
 {
 	sq_node_t *ret = NULL, *old_head = NULL;
 
-	/*queue->headå§‹ç»ˆéƒ½ä¼šå­˜åœ¨,ä¸”ä¸ä¸ºNULL*/
+	/*queue->headÊ¼ÖÕ¶¼»á´æÔÚ,ÇÒ²»ÎªNULL*/
 	if (NULL == queue->head->next)
 	{
 		return NULL;
@@ -295,6 +302,11 @@ static inline sq_node_t* lock_free_dequeue(lock_free_q_t *queue)
 
 	nfs_atomic_dec(&queue->count);
 	return ret;
+}
+#endif
+
+
+#ifdef __cplusplus
 }
 #endif
 

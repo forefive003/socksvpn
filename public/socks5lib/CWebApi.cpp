@@ -7,7 +7,7 @@
 #include "CWebApi.h"
 #include "CNetAccept.h"
 #include "CNetRecv.h"
-#include "ipparser.h"
+#include "engine_ip.h"
 
 CWebApi *g_webApi = NULL;
 
@@ -30,7 +30,11 @@ int CWebApi::postRelayOnline(char *relaySn, char *relayPasswd, short relayPort)
 	std::string reqStr = req;
 	std::string responseStr;
 
-	int ret = m_http_client.Post(m_url, reqStr, responseStr);
+	char urlreq[256] = {0};
+	snprintf(urlreq, 256, "%s/api", m_url.c_str());
+	std::string urlStr = urlreq;
+
+	int ret = m_http_client.Post(urlStr, reqStr, responseStr);
 	if (0 != ret)
 	{
 		_LOG_ERROR("http post failed, url %s, req %s", m_url.c_str(), req);
@@ -49,7 +53,7 @@ int CWebApi::postRelayOnline(char *relaySn, char *relayPasswd, short relayPort)
 	const char* res_str = NULL;
 
 	const char *response = responseStr.c_str();
-	_LOG_INFO("get response %s when post relay server online", response);
+	_LOG_INFO("get response %s when post relay online", response);
 
 	new_obj = json_tokener_parse(response);
 	if( is_error(new_obj))
@@ -69,12 +73,12 @@ int CWebApi::postRelayOnline(char *relaySn, char *relayPasswd, short relayPort)
 	if (atoi(res_str) == 1)
 	{
 		json_object_put(new_obj);
-		_LOG_ERROR("post relay server online failed");
+		_LOG_ERROR("post relay online failed");
 		return -1;
 	}
 
 	json_object_put(new_obj);
-	_LOG_INFO("post relay server online success");
+	//_LOG_INFO("post relay online success");
 	return 0;
 }
 
@@ -86,7 +90,11 @@ int CWebApi::postServerOnline(char *relaySn, char *serverSn, char *pub_ip, char 
 	std::string reqStr = req;
 	std::string responseStr;
 
-	int ret = m_http_client.Post(m_url, reqStr, responseStr);
+	char urlreq[256] = {0};
+	snprintf(urlreq, 256, "%s/api", m_url.c_str());
+	std::string urlStr = urlreq;
+
+	int ret = m_http_client.Post(urlStr, reqStr, responseStr);
 	if (0 != ret)
 	{
 		_LOG_ERROR("http post failed, url %s, req %s", m_url.c_str(), req);
@@ -105,7 +113,9 @@ int CWebApi::postServerOnline(char *relaySn, char *serverSn, char *pub_ip, char 
 	const char* res_str = NULL;
 
 	const char *response = responseStr.c_str();
-	_LOG_INFO("get response %s when post server online", response);
+	_LOG_INFO("get response %s when post server(sn:%s,pubip%s) %s", response,
+		serverSn, pub_ip, 
+		online?"online":"offline");
 
 	new_obj = json_tokener_parse(response);
 	if( is_error(new_obj))
@@ -125,11 +135,12 @@ int CWebApi::postServerOnline(char *relaySn, char *serverSn, char *pub_ip, char 
 	if (atoi(res_str) == 1)
 	{
 		json_object_put(new_obj);
+		_LOG_ERROR("post server status failed");
 		return -1;
 	}
 
 	json_object_put(new_obj);
-	_LOG_INFO("post server online success");
+	//_LOG_INFO("post server online success");
 	return 0;
 }
 

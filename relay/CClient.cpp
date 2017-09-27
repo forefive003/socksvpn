@@ -12,6 +12,7 @@
 #include "CSocksSrvMgr.h"
 #include "socks_relay.h"
 #include "CWebApi.h"
+#include "relay_pkt_def.h"
 
 int CClient::send_remote_close_msg()
 {
@@ -30,12 +31,13 @@ int CClient::send_remote_close_msg()
     if (NULL == clinetNet)
     {
         g_ClientNetMgr->unlock();
-        _LOG_ERROR("fail to find clientserver by %s/%u", m_ipstr, m_port);
+        _LOG_WARN("fail to find clientserver by %s/%u when send remote close to client", m_ipstr, m_port);
         return -1;
     }
 
     pkthdr.pkt_type = PKT_R2C;
     pkthdr.pkt_len = sizeof(PKT_R2C_HDR_T);
+    PKT_HDR_HTON(&pkthdr);
 
     r2chdr.server_ip = pConn->get_remote_ipaddr();
     r2chdr.server_port = pConn->get_remote_port();
@@ -43,6 +45,7 @@ int CClient::send_remote_close_msg()
     r2chdr.client_port = this->m_inner_port;
     r2chdr.sub_type = REMOTE_CLOSED;
     r2chdr.reserved = 0;
+    PKT_R2C_HDR_HTON(&r2chdr);
 
     if(0 != clinetNet->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
@@ -87,12 +90,13 @@ int CClient::send_connect_result_msg(char *buf, int buf_len)
     if (NULL == clinetNet)
     {
         g_ClientNetMgr->unlock();
-        _LOG_ERROR("fail to find clientserver by %s/%u", m_ipstr, m_port);
+        _LOG_WARN("fail to find clientserver by %s/%u when send connect result to client", m_ipstr, m_port);
         return -1;
     }
 
     pkthdr.pkt_type = PKT_R2C;
     pkthdr.pkt_len = sizeof(PKT_R2C_HDR_T) + buf_len;
+    PKT_HDR_HTON(&pkthdr);
 
     r2chdr.server_ip = pConn->get_remote_ipaddr();
     r2chdr.server_port = pConn->get_remote_port();
@@ -100,6 +104,7 @@ int CClient::send_connect_result_msg(char *buf, int buf_len)
     r2chdr.client_port = this->m_inner_port;
     r2chdr.sub_type = R2C_CONNECT_RESULT;
     r2chdr.reserved = 0;
+    PKT_R2C_HDR_HTON(&r2chdr);
 
     if(0 != clinetNet->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
@@ -143,12 +148,13 @@ int CClient::send_data_msg(char *buf, int buf_len)
     if (NULL == clinetNet)
     {
         g_ClientNetMgr->unlock();
-        _LOG_ERROR("fail to find clientserver by %s, innnerip 0x%x", m_ipstr, m_inner_ipaddr);
+        _LOG_WARN("fail to find clientserver by %s/%u when send data to client", m_ipstr, m_port);
         return -1;
     }
 
     pkthdr.pkt_type = PKT_R2C;
     pkthdr.pkt_len = sizeof(PKT_R2C_HDR_T) + buf_len;
+    PKT_HDR_HTON(&pkthdr);
 
     r2chdr.server_ip = pConn->get_remote_ipaddr();
     r2chdr.server_port = pConn->get_remote_port();
@@ -156,6 +162,7 @@ int CClient::send_data_msg(char *buf, int buf_len)
     r2chdr.client_port = this->m_inner_port;
     r2chdr.sub_type = R2C_DATA;
     r2chdr.reserved = 0;
+    PKT_R2C_HDR_HTON(&r2chdr);
 
     if(0 != clinetNet->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {

@@ -24,7 +24,7 @@ int CRemoteServer::accept_handle(int conn_fd, uint32_t client_ip, uint16_t clien
 	setsockopt(conn_fd, SOL_TCP, TCP_KEEPCNT, (void *)&keepcount , sizeof(keepcount ));
 
 	CSocksSrv *sockSrv = new CSocksSrv(client_ip, client_port, conn_fd);
-	sockSrv->init_async_write_resource(socks_malloc, socks_free);
+//	sockSrv->init_async_write_resource(socks_malloc, socks_free);
     if (0 != sockSrv->init())
     {
         delete sockSrv;

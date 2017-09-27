@@ -3,7 +3,7 @@
 #define CSERVER_CFG_H_
 
 #include <list>
-#include "ipparser.h"
+#include "engine_ip.h"
 #include "CWebApi.h"
 
 typedef std::list<CServerCfg*> CSERVCFG_LIST;
@@ -17,7 +17,7 @@ public:
     static CServCfgMgr* instance();
 
     int add_server_cfg(CServerCfg *srvCfg);
-    void del_server_cfg(CServerCfg *srvCfg);
+    void del_server_cfg(char *sn);
 
     int server_online_handle(char *sn, char *pub_ip, char *pri_ip, CServerCfg *srvCfg);
     void server_offline_handle(char *sn, char *pub_ip, char *pri_ip);

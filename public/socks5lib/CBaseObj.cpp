@@ -53,16 +53,16 @@ CBaseClient::~CBaseClient()
 }
 void CBaseClient::free_handle()
 {
-    /*æœ€åŽçš„delete thisä¼šè®¾ç½®m_owner_connä¸ºNULL,å…ˆå±€éƒ¨å˜é‡ç¼“å­˜*/
+    /*×îºóµÄdelete this»áÉèÖÃm_owner_connÎªNULL,ÏÈ¾Ö²¿±äÁ¿»º´æ*/
     CBaseConnection *owner_conn = m_owner_conn;
 
     owner_conn->inc_ref();
 
-    /*å…ˆå‘é€æŠ¥æ–‡*/
+    /*ÏÈ·¢ËÍ±¨ÎÄ*/
     owner_conn->notify_client_close();
-    /*å¿…é¡»å…ˆdetach*/
+    /*±ØÐëÏÈdetach*/
     owner_conn->detach_client();
-    /*åœ¨é‡Šæ”¾client*/
+    /*ÔÚÊÍ·Åclient*/
     owner_conn->free_remote();
     delete this;
     
@@ -74,13 +74,10 @@ void CBaseClient::set_inner_info(uint32_t inner_ipaddr, uint16_t inner_port)
     m_inner_ipaddr = inner_ipaddr;
     m_inner_port = inner_port;
 
-    struct sockaddr_storage ipaddr_s;
-    memset((void*) &ipaddr_s, 0, sizeof(struct sockaddr_storage));
-    ipaddr_s.ss_family = AF_INET;
-    ((struct sockaddr_in *) &ipaddr_s)->sin_addr.s_addr = htonl(inner_ipaddr);
-    if (NULL == util_ip_to_str(&ipaddr_s, m_inner_ipstr)) 
+    if (NULL == engine_ipv4_to_str(htonl(m_inner_ipaddr), m_inner_ipstr))
     {
         _LOG_ERROR("ip to str failed.");
+        return;
     }
     m_inner_ipstr[HOST_IP_LEN] = 0;
 
@@ -105,7 +102,7 @@ CBaseRemote::CBaseRemote(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection
 {
     this->set_thrd_index(1);
     
-    _LOG_INFO("new remote(%s/%u/fd %d), client 0x%x/%u//0x%x/%u/fd %d", 
+    _LOG_INFO("new remote(%s/%u/fd %d), client 0x%x/%u/0x%x/%u/fd %d", 
         get_ipstr(), get_port(), get_fd(),
         m_owner_conn->get_client_ipaddr(), m_owner_conn->get_client_port(),
         m_owner_conn->get_client_inner_ipaddr(), m_owner_conn->get_client_inner_port(),
@@ -113,7 +110,7 @@ CBaseRemote::CBaseRemote(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection
 }
 CBaseRemote::~CBaseRemote()
 {
-    _LOG_INFO("destroy remote(%s/%u/fd %d), client 0x%x/%u//0x%x/%u/fd %d", 
+    _LOG_INFO("destroy remote(%s/%u/fd %d), client 0x%x/%u/0x%x/%u/fd %d", 
         get_ipstr(), get_port(), get_fd(),
         m_owner_conn->get_client_ipaddr(), m_owner_conn->get_client_port(),
         m_owner_conn->get_client_inner_ipaddr(), m_owner_conn->get_client_inner_port(),
@@ -121,16 +118,16 @@ CBaseRemote::~CBaseRemote()
 }
 void CBaseRemote::free_handle()
 {
-    /*æœ€åŽçš„delete thisä¼šè®¾ç½®m_owner_connä¸ºNULL,å…ˆå±€éƒ¨å˜é‡ç¼“å­˜*/
+    /*×îºóµÄdelete this»áÉèÖÃm_owner_connÎªNULL,ÏÈ¾Ö²¿±äÁ¿»º´æ*/
     CBaseConnection *owner_conn = m_owner_conn;
 
     owner_conn->inc_ref();
 
-    /*å…ˆå‘é€æŠ¥æ–‡*/
+    /*ÏÈ·¢ËÍ±¨ÎÄ*/
     owner_conn->notify_remote_close();
-    /*å¿…é¡»å…ˆdetach*/
+    /*±ØÐëÏÈdetach*/
     owner_conn->detach_remote();
-    /*åœ¨é‡Šæ”¾client*/
+    /*ÔÚÊÍ·Åclient*/
     owner_conn->free_client();
     delete this;
 

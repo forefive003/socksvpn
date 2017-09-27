@@ -5,7 +5,7 @@
 #include "CBaseObj.h"
 #include "CBaseConn.h"
 #include "CClient.h"
-#include "CRemote.h"
+#include "CVpnRemote.h"
 
 class CConnection : public CBaseConnection
 {
@@ -23,7 +23,7 @@ public:
         MUTEX_LOCK(m_remote_lock);
         if (m_remote != NULL)
         {
-            ret = REMOTE_CONVERT(m_remote)->send_client_connect_msg(buf, buf_len);
+			ret = ((CVpnRemote*)(m_remote))->send_client_connect_msg(buf, buf_len);
             m_client_connect_req_cnt++;
         }
         else
@@ -34,11 +34,24 @@ public:
         
         return ret;
     }
+    
+    void get_client_real_remote_info(uint32_t *remote_ipaddr, uint16_t *remote_port)
+    {
+        MUTEX_LOCK(m_remote_lock);
+        if (m_client != NULL)
+        {
+            CLIENT_CONVERT(m_client)->get_real_server(remote_ipaddr, remote_port);
+        }
+        else
+        {
+            _LOG_WARN("client NULL when get client real remote info");
+        }
+        MUTEX_UNLOCK(m_remote_lock);
+    }
 
-public:
     int get_client_status()
     {
-        int ret = CLI_INIT;
+        int ret = SOCKS_INIT;
         MUTEX_LOCK(m_remote_lock);
         if (m_client != NULL)
         {
@@ -51,36 +64,6 @@ public:
         MUTEX_UNLOCK(m_remote_lock);
         
         return ret;
-    }
-
-    void set_client_status(CLI_STATUS_E status)
-    {
-        MUTEX_LOCK(m_remote_lock);
-        if (m_client != NULL)
-        {
-            CLIENT_CONVERT(m_client)->set_client_status(status);
-        }
-        else
-        {
-            _LOG_WARN("client NULL when set client status");
-        }
-        MUTEX_UNLOCK(m_remote_lock);
-        
-    }
-
-    void client_auth_result_handle(BOOL result)
-    {
-        MUTEX_LOCK(m_remote_lock);
-        if (m_client != NULL)
-        {
-            CLIENT_CONVERT(m_client)->auth_result_handle(result);
-        }
-        else
-        {
-            _LOG_WARN("client NULL when handle auth result");
-        }
-        MUTEX_UNLOCK(m_remote_lock);
-        
     }
 
     void client_connect_result_handle(BOOL result)
@@ -99,7 +82,6 @@ public:
         MUTEX_UNLOCK(m_remote_lock);
     }
 
-
     void print_statistic(FILE *pFd)
     {
         MUTEX_LOCK(m_remote_lock);
@@ -111,13 +93,17 @@ public:
             m_client_connect_req_cnt, m_client_connect_resp_cnt, 
             m_send_client_data_cnt, m_send_remote_data_cnt);
         MUTEX_UNLOCK(m_remote_lock);
-#if 1
+#if 0
         m_client_connect_resp_cnt = 0;
         m_client_connect_req_cnt = 0;
         m_send_client_data_cnt = 0;
         m_send_remote_data_cnt = 0;
+
+        m_send_client_bytes = 0;
+        m_send_remote_bytes = 0;
 #endif
     }
+    
 public:
     uint64_t m_client_connect_resp_cnt;
     uint64_t m_client_connect_req_cnt;

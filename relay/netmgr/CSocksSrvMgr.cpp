@@ -138,6 +138,29 @@ void CSocksSrvMgr::print_statistic(FILE *pFd)
     return;   
 }
 
+int CSocksSrvMgr::get_srv_ip_array(int *serv_array)
+{
+    int cnt = 0;
+
+    RSOCKS_LIST_Itr itr;
+    CSocksSrv *pSocksSrv = NULL;
+    
+    MUTEX_LOCK(m_obj_lock);
+
+    for (itr = m_rsocks_objs.begin();
+            itr != m_rsocks_objs.end();
+            itr++)
+    {
+        pSocksSrv = *itr;
+        
+        serv_array[cnt] = pSocksSrv->m_ipaddr;
+        cnt++;
+    }
+    MUTEX_UNLOCK(m_obj_lock);
+
+    return cnt;   
+}
+
 #if 0
 /*
 [

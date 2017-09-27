@@ -17,7 +17,7 @@
 #include "socks_relay.h"
 #include "sigproc.h"
 #include "CSocksMem.h"
-#include "utilfile.h"
+#include "utilcommon.h"
 #include "CServerCfg.h"
 #include "CWebApiRelay.h"
 #include "CConfigServer.h"
@@ -44,9 +44,9 @@ static void Usage(char *program)
 {
     printf("Usage: params of %s \n", program);
     printf("%-8s -h for help\n", "");
-    printf("%-8s -c <the listen port that client connect to>\n", "");
-    printf("%-8s -s <the listen port that server connect to>\n", "");
-    printf("%-8s -a <the url of manager plain, for example: http://www.domain.com/api>\n", "");
+    printf("%-8s -c <the listen port that client connect to, default 22223>\n", "");
+    printf("%-8s -s <the listen port that server connect to, default 22225>\n", "");
+    printf("%-8s -a <the url of manager plain, for example: www.domain.com:port>\n", "");
     printf("%-8s -n <the sn of relay server, max 32 bytes len, for example: AABBCCDD002233bb>\n", "");
     printf("%-8s -w <the passwd of relay server when recv from platform, max 32 bytes len, for example: abc123>\n", "");
 }

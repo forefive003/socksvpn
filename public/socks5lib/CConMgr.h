@@ -6,6 +6,7 @@
 
 typedef std::list<CBaseConnection*> CONN_LIST;
 typedef CONN_LIST::iterator CONN_LIST_Itr;
+typedef CONN_LIST::reverse_iterator CONN_LIST_RItr; 
 
 class CConnMgr
 {
@@ -24,7 +25,7 @@ public:
     void print_statistic(FILE *pFd, bool is_detail);
     CBaseConnection* get_conn_by_client(uint32_t client_ip, uint16_t client_port,
     	uint32_t client_inner_ip, uint16_t client_inner_port);
-private:
+public:
     MUTEX_TYPE m_obj_lock;
     CONN_LIST m_conn_objs;
     uint32_t m_conn_cnt;

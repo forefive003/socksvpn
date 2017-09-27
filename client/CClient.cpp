@@ -1,26 +1,65 @@
 #include "commtype.h"
 #include "logproc.h"
+#include "common_def.h"
+#include "proxyConfig.h"
+
 #include "CConnection.h"
 #include "CConMgr.h"
-#include "common_def.h"
 #include "CClient.h"
-#include "CRemote.h"
-#include "CRemoteServer.h"
+#include "CSrvRemote.h"
+#include "CVpnRemote.h"
 #include "CSocksMem.h"
-#include "socks_client.h"
+#include "CRemoteServer.h"
 
-
-int CClient::send_data_msg(char *buf, int buf_len)
+int CClient::register_req_handle(char *buf, int buf_len)
 {
-	return send_data(buf, buf_len);
+	register_req_t  *reg_req = (register_req_t*)buf;
+
+	if (buf_len < sizeof(register_req_t))
+	{
+		_LOG_ERROR("client(%s/%u/fd%d) handle register failed", m_ipstr, m_port, m_fd);
+		return -1;
+	}
+
+	if (ntohl(reg_req->magic) != PROXY_MSG_MAGIC)
+	{
+		_LOG_ERROR("client(%s/%u/fd%d) recv invalid register, magic should 0x%x, but 0x%x", m_ipstr, m_port, m_fd,
+			PROXY_MSG_MAGIC, ntohl(reg_req->magic));
+		return -1;
+	}
+
+	reg_req->remote_ipaddr = ntohl(reg_req->remote_ipaddr);
+	reg_req->remote_port = ntohs(reg_req->remote_port);
+	_LOG_INFO("client(%s/%u/fd%d) get register req, remote 0x%x/%d", m_ipstr, m_port, m_fd,
+		reg_req->remote_ipaddr, reg_req->remote_port);
+
+	this->m_proc_id = reg_req->proc_id;
+	this->set_client_status(SOCKS_CONNECTING);
+	this->set_real_server(reg_req->remote_ipaddr, reg_req->remote_port);
+
+	proxy_cfg_t* cfginfo = proxy_cfg_get();
+	CConnection *pConn = (CConnection *)this->m_owner_conn;
+
+    CSrvRemote *pRemote = new CSrvRemote(cfginfo->server_ip, 0, -1, pConn);
+//    pRemote->init_async_write_resource(socks_malloc, socks_free);    
+    pConn->attach_remote(pRemote);
+    if (0 != pRemote->init())
+    {
+        pConn->detach_remote();
+        delete pRemote;
+        this->set_client_status(SOCKS_CONNECTED_FAILED);
+        return -1;
+    }
+
+    return 0;
 }
 
-int CClient::parse_handshake(char *buf, int buf_len)
+int CClient::socks_parse_handshake(char *buf, int buf_len)
 {
 /*
-05 01 00 å…±3å­—èŠ‚ï¼Œè¿™ç§æ˜¯è¦æ±‚åŒ¿åä»£ç†
-05 01 02 å…±3å­—èŠ‚ï¼Œè¿™ç§æ˜¯è¦æ±‚ä»¥ç”¨æˆ·åå¯†ç æ–¹å¼éªŒè¯ä»£ç†
-05 02 00 02 å…±4å­—èŠ‚ï¼Œè¿™ç§æ˜¯è¦æ±‚ä»¥åŒ¿åæˆ–è€…ç”¨æˆ·åå¯†ç æ–¹å¼ä»£ç†
+05 01 00 ¹²3×Ö½Ú£¬ÕâÖÖÊÇÒªÇóÄäÃû´úÀí
+05 01 02 ¹²3×Ö½Ú£¬ÕâÖÖÊÇÒªÇóÒÔÓÃ»§ÃûÃÜÂë·½Ê½ÑéÖ¤´úÀí
+05 02 00 02 ¹²4×Ö½Ú£¬ÕâÖÖÊÇÒªÇóÒÔÄäÃû»òÕßÓÃ»§ÃûÃÜÂë·½Ê½´úÀí
 */
 	if (buf[0] != 0x05 || buf_len < 3)
 	{
@@ -57,32 +96,31 @@ int CClient::parse_handshake(char *buf, int buf_len)
 	return 0;
 }
 
-
-int CClient::parse_connect(char *buf, int buf_len)
+int CClient::socks_parse_connect(char *buf, int buf_len)
 {
 	/**
-    ç¬¬ä¸€ç§
+    µÚÒ»ÖÖ
         05 01 00 03 13 77  65 62 2E 73 6F 75 72 63  65 66 6F 72 67 65 2E 6E  65 74 00 16
-        1ã€05å›ºå®š
-        2ã€01è¯´æ˜æ˜¯tcp
-        3ã€00å›ºå®š
-        4ã€03è¯´æ˜åé¢è·Ÿç€çš„æ˜¯åŸŸåè€Œä¸æ˜¯ipåœ°å€ï¼Œç”±socks5æœåŠ¡å™¨è¿›è¡Œdnsè§£æ
-        5ã€13å‰é¢æŒ‡æ˜äº†æ˜¯åŸŸåï¼Œé‚£ä¹ˆ0x13ï¼ˆ19å­—èŠ‚ï¼‰æ˜¯åŸŸåå­—ç¬¦é•¿åº¦
-        6ã€77 65 62 2E 73 6F 75 72 63 65 66 6F 72 67 65 2E 6E 65 74 å°±è¿™19ä¸ªæ˜¯åŸŸåweb.sourceforge.netçš„asciiã€‚
-        7ã€00 16ç«¯å£ï¼Œå³ä¸º22ç«¯å£ã€‚
-    ç¬¬äºŒç§
+        1¡¢05¹Ì¶¨
+        2¡¢01ËµÃ÷ÊÇtcp
+        3¡¢00¹Ì¶¨
+        4¡¢03ËµÃ÷ºóÃæ¸ú×ÅµÄÊÇÓòÃû¶ø²»ÊÇipµØÖ·£¬ÓÉsocks5·şÎñÆ÷½øĞĞdns½âÎö
+        5¡¢13Ç°ÃæÖ¸Ã÷ÁËÊÇÓòÃû£¬ÄÇÃ´0x13£¨19×Ö½Ú£©ÊÇÓòÃû×Ö·û³¤¶È
+        6¡¢77 65 62 2E 73 6F 75 72 63 65 66 6F 72 67 65 2E 6E 65 74 ¾ÍÕâ19¸öÊÇÓòÃûweb.sourceforge.netµÄascii¡£
+        7¡¢00 16¶Ë¿Ú£¬¼´Îª22¶Ë¿Ú¡£
+    µÚ¶şÖÖ
         05 01 00 01 CA 6C 16 05 00 50
-        1ã€05å›ºå®š
-        2ã€01è¯´æ˜tcp
-        3ã€00å›ºå®š
-        4ã€01è¯´æ˜æ˜¯ipåœ°å€
-        5ã€CA 6C 16 05å°±æ˜¯202.108.22.5äº†ï¼Œç™¾åº¦ip
-        6ã€00 50ç«¯å£ï¼Œå³ä¸º80ç«¯å£
+        1¡¢05¹Ì¶¨
+        2¡¢01ËµÃ÷tcp
+        3¡¢00¹Ì¶¨
+        4¡¢01ËµÃ÷ÊÇipµØÖ·
+        5¡¢CA 6C 16 05¾ÍÊÇ202.108.22.5ÁË£¬°Ù¶Èip
+        6¡¢00 50¶Ë¿Ú£¬¼´Îª80¶Ë¿Ú
     */
 
 	if (buf[0] != 0x05 || buf[2] != 0)
     {
-        _LOG_ERROR("data buf invalid.");
+        _LOG_ERROR("data buf invalid, not socks5.");
         return -1;
     }
     if (buf[1] != 0x01) 
@@ -114,7 +152,9 @@ int CClient::parse_connect(char *buf, int buf_len)
         remote_ipaddr = ntohl(remote_ipaddr);
         memcpy(&remote_dstport, &buf[8], 2);
         remote_dstport = ntohs(remote_dstport);
-        _LOG_INFO("connect request ipaddr 0x%x, port %u", remote_ipaddr, remote_dstport);
+        _LOG_INFO("get socks5 req, connect request ipaddr 0x%x, port %u", remote_ipaddr, remote_dstport);
+
+        this->set_real_server(remote_ipaddr, remote_dstport);
         break;
     case 0x03: /* FQDN */
         if (buf_len < (5 + buf[4] + 2))
@@ -148,62 +188,190 @@ int CClient::parse_connect(char *buf, int buf_len)
     return 0;
 }
 
+int CClient::socks_proto5_handle(char *buf, int buf_len)
+{
+	if (0 != this->socks_parse_handshake(buf, buf_len))
+	{
+		_LOG_ERROR("client(%s/%u/%s/%u/fd%d), parse handshake msg failed", m_ipstr, m_port, 
+			m_inner_ipstr, m_inner_port, m_fd);
+		return -1;
+	}
+
+	this->set_client_status(SOCKS_AUTHING);
+	this->m_socks_proto_version = 5;
+
+	/*Ìí¼ÓÒ»¸öÔ¶³ÌÁ¬½Ó*/
+	if (is_remote_connected())
+	{
+		proxy_cfg_t* cfginfo = proxy_cfg_get();
+		CConnection *pConn = (CConnection *)this->m_owner_conn;
+		CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn);
+//		pRemote->init_async_write_resource(socks_malloc, socks_free);
+        pConn->attach_remote(pRemote);
+
+		if (0 != pRemote->init())
+		{
+			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), remote init failed", m_ipstr, m_port, 
+				m_inner_ipstr, m_inner_port, m_fd);
+			pConn->detach_remote();
+		    delete pRemote;
+		    return -1;
+		}
+		
+		this->auth_result_handle(TRUE);
+	}
+	else
+	{
+		_LOG_ERROR("clost client(%s/%u/%s/%u/fd%d), for remote not authed", m_ipstr, m_port, 
+			m_inner_ipstr, m_inner_port, m_fd);
+		this->auth_result_handle(FALSE);
+	}
+	return 0;
+}
+
+int CClient::socks_proto4_handle(char *buf, int buf_len)
+{
+	/*04 01 port ipaddr*/
+	if (buf_len < 8)
+	{
+		_LOG_INFO("get socks4 req, but buf len %d too short", buf_len);
+		return -1;
+	}
+
+	uint32_t remote_ipaddr = 0;
+	uint16_t remote_dstport = 0;
+
+	/*2-3Îª¶Ë¿Ú*/
+	memcpy(&remote_dstport, &buf[2], 2);
+    remote_dstport = ntohs(remote_dstport);
+    /*4-7ÎªipµØÖ·*/
+    memcpy(&remote_ipaddr, &buf[4], 4);
+    remote_ipaddr = ntohl(remote_ipaddr);
+    
+    this->set_real_server(remote_ipaddr, remote_dstport);
+    _LOG_INFO("get socks4 req, connect request ipaddr 0x%x, port %u", remote_ipaddr, remote_dstport);
+
+	this->set_client_status(SOCKS_AUTHING);
+	this->m_socks_proto_version = 4;
+
+	/*Ìí¼ÓÒ»¸öÔ¶³ÌÁ¬½Ó*/
+	if (is_remote_connected())
+	{
+		proxy_cfg_t* cfginfo = proxy_cfg_get();
+		CConnection *pConn = (CConnection *)this->m_owner_conn;
+		CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn);
+//		pRemote->init_async_write_resource(socks_malloc, socks_free);
+        pConn->attach_remote(pRemote);
+
+		if (0 != pRemote->init())
+		{
+			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), remote init failed", m_ipstr, m_port, 
+				m_inner_ipstr, m_inner_port, m_fd);
+			pConn->detach_remote();
+		    delete pRemote;
+		    return -1;
+		}
+		
+		this->auth_result_handle(TRUE);
+
+		/*05 01 00 01 CA 6C 16 05 00 50
+        1¡¢05¹Ì¶¨
+        2¡¢01ËµÃ÷tcp
+        3¡¢00¹Ì¶¨
+        4¡¢01ËµÃ÷ÊÇipµØÖ·
+        5¡¢CA 6C 16 05¾ÍÊÇ202.108.22.5ÁË£¬°Ù¶Èip
+        6¡¢00 50¶Ë¿Ú£¬¼´Îª80¶Ë¿Ú*/
+		remote_ipaddr = this->m_real_remote_ipaddr;
+		remote_dstport = this->m_real_remote_port;		
+		remote_ipaddr = htonl(remote_ipaddr);
+		remote_dstport = htons(remote_dstport);
+
+		/*00 5A port ipaddr*/
+		char buf[10] = {0};
+		buf[0] = 0x05;
+		buf[1] = 0x01;
+		buf[2] = 0x00;
+		buf[3] = 0x01;
+		memcpy(&buf[4], &remote_ipaddr, 4);
+		memcpy(&buf[8], &remote_dstport, 2);		
+
+		//g_total_connect_req_cnt++;
+		this->m_request_time = util_get_cur_time();
+		if (0 != pConn->fwd_client_connect_msg(buf, 10))
+		{
+			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), send connect to remote failed", m_ipstr, m_port, 
+				m_inner_ipstr, m_inner_port, m_fd);
+			return -1;
+		}
+	}
+	else
+	{
+		_LOG_ERROR("clost client(%s/%u/%s/%u/fd%d), for remote not authed", m_ipstr, m_port, 
+			m_inner_ipstr, m_inner_port, m_fd);
+		this->auth_result_handle(FALSE);
+	}
+	return 0;
+}
+
 int CClient::recv_handle(char *buf, int buf_len)
 {
 	int ret = 0;
 	CConnection *pConn = (CConnection *)this->m_owner_conn;
-	CRemote *pRemote = NULL;
 
 	_LOG_DEBUG("recv from client(%s/%u/fd%d)", m_ipstr, m_port, m_fd);
 
 	switch(this->m_status)
 	{
-	case CLI_INIT:
-		if (0 != this->parse_handshake(buf, buf_len))
+	case SOCKS_INIT:
+		if (buf_len <= 2)
 		{
-			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), parse handshake msg failed", m_ipstr, m_port, 
+			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), recv data failed in accepcted status", m_ipstr, m_port, 
+				m_inner_ipstr, m_inner_port, m_fd);
+			return -1;
+		}
+		if ((buf[0] == 0x04 && buf[1] == 0x01)
+			|| (buf[0] == 0x05 && buf[1] == 0x01)
+			|| (buf[0] == 0x05 && buf[1] == 0x02))
+		{
+			m_is_standard_socks = true;
+			
+			/*recv socks packet directly, maybe from chrome or ie*/
+			if (!proxy_cfg_is_vpn_type())
+			{
+				_LOG_ERROR("client(%s/%u/%s/%u/fd%d) recv socks auth req, but not VPN type, ignore", m_ipstr, m_port, 
+					m_inner_ipstr, m_inner_port, m_fd);
+				return -1;
+			}
+
+			if (buf[0] == 0x04)
+			{
+				return this->socks_proto4_handle(buf, buf_len);
+			}
+
+			return this->socks_proto5_handle(buf, buf_len);
+		}
+		else
+		{
+			return this->register_req_handle(buf, buf_len);
+		}
+		break;
+
+	case SOCKS_CONNECTING:
+		if (!proxy_cfg_is_vpn_type())
+		{
+			_LOG_ERROR("client(%s/%u/%s/%u/fd%d) recv socks connect req, but not VPN type, ignore", m_ipstr, m_port, 
 				m_inner_ipstr, m_inner_port, m_fd);
 			return -1;
 		}
 
-		this->set_client_status(CLI_AUTHING);
-
-		/*æ·»åŠ ä¸€ä¸ªè¿œç¨‹è¿æ¥*/
-		if (is_remote_connected())
-		{
-			pRemote = new CRemote(g_server_ip, 0, -1, pConn);
-			pRemote->init_async_write_resource(socks_malloc, socks_free);
-			g_total_remote_cnt++;
-            pConn->attach_remote(pRemote);
-
-			if (0 != pRemote->init())
-			{
-				_LOG_ERROR("client(%s/%u/%s/%u/fd%d), remote init failed", m_ipstr, m_port, 
-					m_inner_ipstr, m_inner_port, m_fd);
-				pConn->detach_remote();
-			    delete pRemote;
-			    return -1;
-			}
-			
-			this->auth_result_handle(TRUE);
-		}
-		else
-		{
-			_LOG_ERROR("clost client(%s/%u/%s/%u/fd%d), for remote not authed", m_ipstr, m_port, 
-				m_inner_ipstr, m_inner_port, m_fd);
-			this->auth_result_handle(FALSE);
-		}
-		break;
-
-	case CLI_CONNECTING:
-		if (0 != this->parse_connect(buf, buf_len))
+		if (0 != this->socks_parse_connect(buf, buf_len))
 		{
 			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), parse connect msg failed", m_ipstr, m_port, 
 				m_inner_ipstr, m_inner_port, m_fd);
 			return -1;
 		}
 
-		g_total_connect_req_cnt++;
+		//g_total_connect_req_cnt++;
 		this->m_request_time = util_get_cur_time();
 		ret = pConn->fwd_client_connect_msg(buf, buf_len);
 		if (0 != ret)
@@ -214,8 +382,8 @@ int CClient::recv_handle(char *buf, int buf_len)
 		}		
 		break;
 
-	case CLI_CONNECTED:
-		/*å‘é€ç»™è¿œç¨‹*/
+	case SOCKS_CONNECTED:
+		/*·¢ËÍ¸øÔ¶³Ì*/
 		ret = pConn->fwd_client_data_msg(buf, buf_len);
 		if (0 != ret)
 		{
@@ -225,7 +393,7 @@ int CClient::recv_handle(char *buf, int buf_len)
 		}
 		break;
 
-	case CLI_AUTHING:
+	case SOCKS_AUTHING:
 	default:
 		/// can't be here
 		_LOG_ERROR("client(%s/%u/%s/%u/fd%d) status %d, can't be here", m_ipstr, m_port, 
@@ -233,34 +401,12 @@ int CClient::recv_handle(char *buf, int buf_len)
 		return -1;
 		break;
 	}
-
 	return 0;
-}
-
-int CClient::get_client_status()
-{
-	return m_status;
-}
-
-void CClient::set_client_status(CLI_STATUS_E status)
-{
-	if (status == m_status)
-	{
-		_LOG_ERROR("client(%s/%u/%s/%u/fd%d) status already %s", m_ipstr, m_port, 
-			m_inner_ipstr, m_inner_port,
-			m_fd, g_cli_status_desc[m_status]);
-		return;
-	}
-
-	m_status = status;
-	_LOG_INFO("client(%s/%u/%s/%u/fd%d) set to status %s", m_ipstr, m_port, 
-		m_inner_ipstr, m_inner_port,
-		m_fd, g_cli_status_desc[m_status]);
 }
 
 void CClient::auth_result_handle(BOOL result)
 {
-	if (CLI_AUTHING != m_status)
+	if (SOCKS_AUTHING != m_status)
 	{
 		_LOG_WARN("client(%s/%u/%s/%u/fd%d) not authing when recv auth result", m_ipstr, m_port, 
 			m_inner_ipstr, m_inner_port, m_fd);
@@ -270,15 +416,18 @@ void CClient::auth_result_handle(BOOL result)
 	if (result)
 	{
         //_LOG_INFO("client(0x%s/%u/fd%d) recv auth success", m_ipstr, m_port, m_fd);
-		this->set_client_status(CLI_CONNECTING);
+		this->set_client_status(SOCKS_CONNECTING);
 
-		char buf[2] = {0};
-		buf[0] = 0x05;
-		buf[1] = 0x00; /* NO AUTHENTICATION REQUIRED */
-		if (0 != this->send_data_msg(buf, 2))
+		if (this->m_socks_proto_version == 5)
 		{
-			_LOG_ERROR("send failed, handshake failed.");
-			this->free();
+			char buf[2] = {0};
+			buf[0] = 0x05;
+			buf[1] = 0x00; /* NO AUTHENTICATION REQUIRED */
+			if (0 != this->send_data_msg(buf, 2))
+			{
+				_LOG_ERROR("send failed, handshake failed.");
+				this->free();
+			}
 		}
 	}
 	else
@@ -291,7 +440,7 @@ void CClient::auth_result_handle(BOOL result)
 
 void CClient::connect_result_handle(BOOL result)
 {
-    if (CLI_CONNECTING != m_status)
+    if (SOCKS_CONNECTING != m_status)
     {
         _LOG_WARN("client(%s/%u/%s/%u/fd%d) not connecting when recv connect result", m_ipstr, m_port, 
         	m_inner_ipstr, m_inner_port, m_fd);
@@ -300,19 +449,109 @@ void CClient::connect_result_handle(BOOL result)
 
     uint64_t response_time = util_get_cur_time();
     uint64_t consume_time = response_time - this->m_request_time;
-    g_total_connect_resp_consume_time += consume_time;
-	g_total_connect_resp_cnt++;
+    //g_total_connect_resp_consume_time += consume_time;
+	//g_total_connect_resp_cnt++;
 
     if (result)
     {
-        _LOG_INFO("client(%s/%u/%s/%u/fd%d) recv connect success, consume %"PRIu64"s", m_ipstr, m_port, 
+        _LOG_INFO("client(%s/%u/%s/%u/fd%d) connect success, consume %"PRIu64"s", m_ipstr, m_port, 
         	m_inner_ipstr, m_inner_port, m_fd, consume_time);
-        this->set_client_status(CLI_CONNECTED);
+        this->set_client_status(SOCKS_CONNECTED);
     }
     else
     {
-        _LOG_WARN("client(%s/%u/%s/%u/fd%d) recv connect failed, consume %"PRIu64"s", m_ipstr, m_port, 
+        _LOG_WARN("client(%s/%u/%s/%u/fd%d) connect failed, consume %"PRIu64"s", m_ipstr, m_port, 
         	m_inner_ipstr, m_inner_port, m_fd, consume_time);
-        this->free();
+        this->set_client_status(SOCKS_CONNECTED_FAILED);
     }
+}
+
+int CClient::get_client_status()
+{
+	return m_status;
+}
+
+void CClient::set_client_status(SOCKS_STATUS_E status)
+{
+	if (status == m_status)
+	{
+		_LOG_ERROR("client(%s/%u/%s/%u/fd%d) status already %s", m_ipstr, m_port, 
+			m_inner_ipstr, m_inner_port,
+			m_fd, g_socks_status_desc[m_status]);
+		return;
+	}
+
+	m_status = status;
+	_LOG_INFO("client(%s/%u/%s/%u/fd%d) set to status %s", m_ipstr, m_port, 
+		m_inner_ipstr, m_inner_port,
+		m_fd, g_socks_status_desc[m_status]);
+
+	if (proxy_cfg_is_vpn_type())
+	{
+		if (m_status == SOCKS_CONNECTED)
+		{
+			if (this->m_socks_proto_version == 4)
+			{
+				/*socks4*/
+				uint32_t remote_ipaddr = this->m_real_remote_ipaddr;
+				uint16_t remote_dstport = this->m_real_remote_port;
+
+				/*2-3Îª¶Ë¿Ú*/
+			    remote_dstport = htons(remote_dstport);
+			    /*4-7ÎªipµØÖ·*/
+			    remote_ipaddr = htonl(remote_ipaddr);
+
+				/*00 5A port ipaddr*/
+				char resp_buf[8] = { 0 };
+				resp_buf[0] = 0x00;
+				resp_buf[1] = 0x5A;
+				memcpy(&resp_buf[2], &remote_dstport, 2);
+				memcpy(&resp_buf[4], &remote_ipaddr, 4);
+				if (0 != this->send_data_msg(resp_buf, 8))
+				{
+					_LOG_ERROR("send failed, handshake failed.");
+					this->free();
+				}
+			}
+			else
+			{
+				/*socks5*/
+				char resp_buf[10] = {0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+				if (0 != this->send_data_msg(resp_buf, sizeof(resp_buf)))
+				{
+					_LOG_ERROR("send failed, handshake failed.");
+					this->free();
+				}
+			}
+		}
+	}
+	else
+	{
+		if (m_status == SOCKS_CONNECTED)
+		{
+			register_resp_t reg_resp;
+			reg_resp.result = true;
+
+			this->send_data((char*)&reg_resp, sizeof(reg_resp));
+		}
+		else if (m_status == SOCKS_CONNECTED_FAILED)
+		{
+			register_resp_t reg_resp;
+			reg_resp.result = false;
+
+			this->send_data((char*)&reg_resp, sizeof(reg_resp));
+		}
+	}
+}
+
+void CClient::set_real_server(uint32_t real_serv, uint16_t real_port)
+{
+    m_real_remote_ipaddr = real_serv;
+    m_real_remote_port = real_port;
+}
+
+void CClient::get_real_server(uint32_t *real_serv, uint16_t *real_port)
+{
+    *real_serv = m_real_remote_ipaddr;
+    *real_port = m_real_remote_port;
 }

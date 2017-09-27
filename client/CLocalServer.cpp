@@ -1,12 +1,13 @@
 #include "commtype.h"
 #include "logproc.h"
+#include "common_def.h"
+#include "proxyConfig.h"
+
 #include "CNetAccept.h"
 #include "CConnection.h"
 #include "CConMgr.h"
-#include "common_def.h"
 #include "CClient.h"
 #include "CLocalServer.h"
-#include "socks_client.h"
 #include "CSocksMem.h"
 
 CLocalServer *g_LocalServ = NULL;
@@ -29,8 +30,8 @@ int CLocalServer::accept_handle(int conn_fd, uint32_t client_ip, uint16_t client
 
     CClient *pClient = new CClient(client_ip, client_port, conn_fd, pConn);
     //pClient->set_inner_info(client_ip,client_port);
-    pClient->init_async_write_resource(socks_malloc, socks_free);
-    g_total_client_cnt++;
+//    pClient->init_async_write_resource(socks_malloc, socks_free);
+    //g_total_client_cnt++;
     pConn->attach_client(pClient);
 
     if (0 != pClient->init())

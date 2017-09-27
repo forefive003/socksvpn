@@ -3,7 +3,7 @@
 
 #include "CHttpClient.h"
 #include "json.h"
-#include "ipparser.h"
+#include "engine_ip.h"
 
 typedef struct  server_info
 {
@@ -88,7 +88,7 @@ enum
 
 class CWebApi {
 public:
-	CWebApi(char *url, bool is_debug=true)
+	CWebApi(char *url, bool is_debug=false)
 	{
 		m_url = url;
 		if (is_debug)

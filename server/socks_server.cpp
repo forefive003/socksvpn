@@ -11,7 +11,7 @@
 #include "socks_server.h"
 #include "sigproc.h"
 #include "CSocksMem.h"
-#include "utilfile.h"
+#include "utilcommon.h"
 #include "CWebApi.h"
 
 
@@ -33,7 +33,7 @@ static void Usage(char *program)
     printf("Usage: params of %s \n", program);
     printf("%-8s -h for help\n", "");
     printf("%-8s -r <relay server ip>\n", "");
-    printf("%-8s -a <the url of manager plain, for example: http://www.domain.com/api>\n", "");
+    printf("%-8s -a <the url of manager plain, for example: www.domain.com:port>\n", "");
     printf("%-8s -p <relay server port>\n", "");
     printf("%-8s -m <xor|rc4>, Don't take this option when needn't encrypt data\n", "");
     printf("%-8s -e <encrypt key>\n", "");
@@ -54,7 +54,6 @@ relay_port: 转发服务器端口
 static int cmd_parser(int argc, char *argv[])
 {
     int opt;
-    struct sockaddr_storage ipaddr;
     size_t key_len;
 
     while ((opt = getopt(argc, argv, "hr:a:p:m:e:n:d:")) != -1) {
@@ -73,13 +72,13 @@ static int cmd_parser(int argc, char *argv[])
 
         case 'r':
             strncpy(g_relay_ipstr, optarg, HOST_IP_LEN);
-            if (0 != util_str_to_ip(g_relay_ipstr, &ipaddr))
+            if (0 != engine_str_to_ipv4(g_relay_ipstr, (uint32_t*)&g_relay_ip))
             {
                 printf("Invalid relay server %s\n", g_relay_ipstr);
                 Usage(argv[0]);
                 return -1;
             }
-            g_relay_ip = htonl(((struct sockaddr_in *)&ipaddr)->sin_addr.s_addr);
+            g_relay_ip = ntohl(g_relay_ip);
             printf("get option: relay server ip %s\n", g_relay_ipstr);
             break;
         case 'a':
@@ -262,7 +261,7 @@ static void _timer_callback(void* param1, void* param2,
 
     expire_cnt++;
 
-    if (expire_cnt % 10 == 0)
+    if (expire_cnt % 2 == 0)
     {
         print_statistic();
     }
@@ -276,7 +275,6 @@ static void _timer_callback(void* param1, void* param2,
             g_relay_ip = 0;
             g_relay_port = 0;
 
-            struct sockaddr_storage ipaddr;
             char relay_ipstr[HOST_IP_LEN + 1] = {0};
             short relay_port = 0;
             if (0 != g_webApi->getRelayServerIpPort(relay_ipstr, &relay_port))
@@ -287,24 +285,25 @@ static void _timer_callback(void* param1, void* param2,
             else
             {
                 strncpy(g_relay_ipstr, relay_ipstr, HOST_IP_LEN);
-                if (0 != util_str_to_ip(g_relay_ipstr, &ipaddr))
+
+                if (0 != engine_str_to_ipv4(g_relay_ipstr, (uint32_t*)&g_relay_ip))
                 {
                     _LOG_WARN("Invalid relay server %s", g_relay_ipstr);
                 }
                 else
                 {
-                    g_relay_ip = htonl(((struct sockaddr_in *)&ipaddr)->sin_addr.s_addr);
+                    g_relay_ip = ntohl(g_relay_ip);
                     g_relay_port = relay_port;
                     _LOG_INFO("get relay server from platform: %s:%u", g_relay_ipstr, g_relay_port);
                     printf("get relay ip port from %s: %s/%d\n", g_relay_domain, g_relay_ipstr, g_relay_port);
-                }
+                }                
             }
         }
 
         if (g_relay_ip != 0)
         {
             g_LocalServ = new CLocalServer(g_relay_ip, g_relay_port);
-            g_LocalServ->init_async_write_resource(socks_malloc, socks_free);
+//            g_LocalServ->init_async_write_resource(socks_malloc, socks_free);
             if(0 != g_LocalServ->init())
             {
                 delete g_LocalServ;
@@ -377,7 +376,6 @@ int main(int argc, char **argv)
         g_relay_ip = 0;
         g_relay_port = 0;
 
-        struct sockaddr_storage ipaddr;
         char relay_ipstr[HOST_IP_LEN + 1] = {0};
         short relay_port = 0;
         if (0 != g_webApi->getRelayServerIpPort(relay_ipstr, &relay_port))
@@ -388,13 +386,13 @@ int main(int argc, char **argv)
         else
         {
             strncpy(g_relay_ipstr, relay_ipstr, HOST_IP_LEN);
-            if (0 != util_str_to_ip(g_relay_ipstr, &ipaddr))
+            if (0 != engine_str_to_ipv4(g_relay_ipstr, (uint32_t*)&g_relay_ip))
             {
                 _LOG_WARN("Invalid relay server %s", g_relay_ipstr);
             }
             else
             {
-                g_relay_ip = htonl(((struct sockaddr_in *)&ipaddr)->sin_addr.s_addr);
+                g_relay_ip = ntohl(g_relay_ip);
                 g_relay_port = relay_port;
                 _LOG_INFO("get relay server from platform: %s:%u", g_relay_ipstr, g_relay_port);
                 printf("get relay ip port from %s: %s/%d\n", g_relay_domain, g_relay_ipstr, g_relay_port);
@@ -403,22 +401,15 @@ int main(int argc, char **argv)
     }
     else
     {
-        struct sockaddr_storage ipaddr;
-        char ipstr[64] = { 0 };
-        memset((void*) &ipaddr, 0, sizeof(struct sockaddr_storage));
-        ipaddr.ss_family = AF_INET;
-        ((struct sockaddr_in *) &ipaddr)->sin_addr.s_addr = htonl(g_relay_ip);
-        if (NULL == util_ip_to_str(&ipaddr, ipstr)) 
-        {
-            printf("ip to str failed for relay server.\n");
-            return -1;
-        }
+        char ipstr[HOST_IP_LEN] = { 0 };
+        engine_ipv4_to_str(htonl(g_relay_ip), ipstr);
+        
         strncpy(g_relay_ipstr, ipstr, HOST_IP_LEN);
         printf("relay server: %s:%u\n", g_relay_ipstr, g_relay_port);
     }
 
     /*start check timer*/
-    np_add_time_job(_timer_callback, NULL, NULL, NULL, NULL, 1, FALSE);
+    np_add_time_job(_timer_callback, NULL, NULL, NULL, NULL, 3, FALSE);
 
     np_start();
     while(g_exit == false)

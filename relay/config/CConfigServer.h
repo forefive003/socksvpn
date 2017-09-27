@@ -50,6 +50,8 @@ public:
 
 private:
     int _set_server_cfg(struct json_object *paramObj, char *resp_buf, int buf_len);
+    int _del_server_cfg(struct json_object *paramObj, char *resp_buf, int buf_len);
+    
     int _set_debug_level(struct json_object *paramObj, char *resp_buf, int buf_len);
     int _get_server_cfg(struct json_object *paramObj, char *resp_buf, int buf_len);
 

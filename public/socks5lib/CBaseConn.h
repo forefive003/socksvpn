@@ -43,8 +43,13 @@ public:
     CBaseClient *m_client;
     CBaseRemote *m_remote;
 
+    uint64_t m_setup_time;
+    
     uint64_t m_send_client_data_cnt;
     uint64_t m_send_remote_data_cnt;
+
+    uint64_t m_send_client_bytes;
+    uint64_t m_send_remote_bytes;
 private:
     MUTEX_TYPE m_ref_lock;
     uint32_t m_refcnt;

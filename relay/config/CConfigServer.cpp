@@ -50,6 +50,82 @@ int CConfigSrv::_get_server_cfg(struct json_object *paramObj, char *resp_buf, in
 }
 
 /*
+{
+    "cmd":2,
+    "relaysn":"sakjgukagklnknk",//relay_server需要验证其合法性
+    "password":"aaaa",//relay_server需要验证其合法性
+    "sn":"AABBCCDD002233bb"//socks_server sn
+}
+*/
+int CConfigSrv::_del_server_cfg(struct json_object *paramObj, char *resp_buf, int buf_len)
+{
+    struct json_object *relaysnObj = NULL;
+    const char* relaysnStr = NULL;
+    struct json_object *passwordObj = NULL;
+    const char* passwordStr = NULL;
+    struct json_object *serverSnObj = NULL;
+    const char* serverSnStr = NULL;
+
+    /*relaysn*/
+    relaysnObj = json_object_object_get(paramObj, "relaysn");
+    if (relaysnObj == NULL)
+    {
+        _LOG_ERROR("recv invalid json str, relaysn failed.");
+        return -1;
+    }
+    relaysnStr = json_object_get_string(relaysnObj);
+    if (NULL == relaysnStr)
+    {
+        _LOG_ERROR("recv invalid json str, relaysn value failed.");
+        return -1;
+    }
+    /*检查sn是否正确*/
+    if (strncmp(relaysnStr, g_relaysn, MAX_SN_LEN) != 0)
+    {
+        _LOG_ERROR("relaysn %s not wanted, should be %s.", relaysnStr, g_relaysn);
+        return -1;
+    }
+
+    /*password*/
+    passwordObj = json_object_object_get(paramObj, "password");
+    if (passwordObj == NULL)
+    {
+        _LOG_ERROR("recv invalid json str, password failed.");
+        return -1;
+    }
+    passwordStr = json_object_get_string(passwordObj);
+    if (NULL == passwordStr)
+    {
+        _LOG_ERROR("recv invalid json str, password value failed.");
+        return -1;
+    }
+    /*检查passwd是否正确*/
+    if (strncmp(passwordStr, g_relay_passwd, MAX_PASSWD_LEN) != 0)
+    {
+        _LOG_ERROR("relay passwd %s not wanted, should be %s.", passwordStr, g_relay_passwd);
+        return -1;
+    }
+
+    /*body*/
+    serverSnObj = json_object_object_get(paramObj, "sn");
+    if (serverSnObj == NULL)
+    {
+        _LOG_ERROR("recv invalid json str, server sn failed.");
+        return -1;
+    }
+    serverSnStr =  json_object_get_string(serverSnObj);
+    if (NULL == serverSnStr)
+    {
+        _LOG_ERROR("recv invalid json str, server sn value failed.");
+        return -1;
+    }
+
+    /*根据sn获取配置*/
+    g_SrvCfgMgr->del_server_cfg((char*)serverSnStr);
+    return 0;
+}
+
+/*
 "relaysn":"sakjgukagklnknk",//relay_server需要验证其合法性
 "password":"aaaa",//relay_server需要验证其合法性
 "body":{
@@ -261,11 +337,11 @@ int CConfigSrv::_set_server_cfg(struct json_object *paramObj, char *resp_buf, in
         }
         if (0 == atoi(tmpStr))
         {
-            srvCfg.m_acct_infos[srvCfg.m_acct_cnt].enabled = true;
+            srvCfg.m_acct_infos[srvCfg.m_acct_cnt].enabled = false;
         }
         else
         {
-            srvCfg.m_acct_infos[srvCfg.m_acct_cnt].enabled = false;
+            srvCfg.m_acct_infos[srvCfg.m_acct_cnt].enabled = true;
         }
 
         /*个数加一*/
@@ -366,7 +442,23 @@ int CConfigSrv::request_handle(char *buffer, int buf_len, char *resp_buf, int re
     tmpObj = json_object_object_get(new_obj, "type");
     if (tmpObj == NULL)
     {
-        ret = this->_set_server_cfg(new_obj, resp_buf, resp_buf_len);
+        tmpObj = json_object_object_get(new_obj, "cmd");
+        if (NULL == tmpObj)
+        {
+            _LOG_ERROR("recv invalid json str, no cmd.");
+            json_object_put(new_obj);
+            return -1;
+        }
+        tmpStr = json_object_get_string(tmpObj);
+
+        if (atoi(tmpStr) == 1)
+        {
+            ret = this->_set_server_cfg(new_obj, resp_buf, resp_buf_len);
+        }
+        else
+        {
+            ret = this->_del_server_cfg(new_obj, resp_buf, resp_buf_len);
+        }
     }
     else
     {

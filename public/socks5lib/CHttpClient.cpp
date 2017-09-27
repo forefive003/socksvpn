@@ -10,8 +10,10 @@
 #include "commtype.h"
 #include "logproc.h"
 
-#include <openssl/ssl.h>
 #include <pthread.h>
+
+#ifdef _SUPPORT_MULTITHRAD
+#include "openssl/ssl.h"
 
 static pthread_mutex_t *lockarray = NULL;
 
@@ -61,6 +63,16 @@ static void kill_locks(void)
 
 	free(lockarray);
 }
+#else
+static void init_locks(void)
+{
+	return;
+}
+static void kill_locks(void)
+{
+	return;
+}
+#endif
 
 
 CHttpClient::CHttpClient() {

@@ -3,23 +3,7 @@
 #define _LOG_PROC_H_
 
 #include <string.h>
-
-#ifdef _WIN32
-
-#ifdef ETP_DLL_EXPORT
-#define DLL_API __declspec(dllexport)
-#elif defined(ETP_USE_DLL)
-#define DLL_API __declspec(dllimport)
-#elif defined(ETP_USE_LIB)
-#define DLL_API
-#else
-#define DLL_API
-#endif
-
-#else
-#define DLL_API extern
-#endif
-
+#include "commtype.h"
 
 
 #ifdef __cplusplus
@@ -53,7 +37,7 @@ enum
 
 DLL_API int loggger_init(char *log_path, char *mod_name,
 					unsigned int maxfilekb, unsigned int maxfilecnt,
-					BOOL isAsynWr);
+					bool isAsynWr);
 DLL_API void loggger_exit();
 DLL_API void logger_write(int level, const char *format, ...);
 DLL_API void logger_set_level(int level);

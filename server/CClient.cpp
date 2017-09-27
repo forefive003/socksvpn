@@ -28,12 +28,14 @@ int CClient::send_remote_close_msg()
 
     pkthdr.pkt_type = PKT_S2R;
     pkthdr.pkt_len = sizeof(PKT_S2R_HDR_T);
+    PKT_HDR_HTON(&pkthdr);
 
     s2rhdr.client_pub_ip = m_ipaddr;
     s2rhdr.client_pub_port = m_port;
     s2rhdr.client_inner_ip = m_inner_ipaddr;
     s2rhdr.client_inner_port = m_inner_port;
     s2rhdr.sub_type = REMOTE_CLOSED;
+    PKT_S2R_HDR_HTON(&s2rhdr);
 
     MUTEX_LOCK(m_local_srv_lock);
     if (NULL == g_LocalServ)
@@ -79,12 +81,14 @@ int CClient::send_connect_result(BOOL result)
 
     pkthdr.pkt_type = PKT_S2R;
     pkthdr.pkt_len = sizeof(PKT_S2R_HDR_T) + resp_buf_len;
+    PKT_HDR_HTON(&pkthdr);
 
     s2rhdr.client_pub_ip = m_ipaddr;
     s2rhdr.client_pub_port = m_port;
     s2rhdr.client_inner_ip = m_inner_ipaddr;
     s2rhdr.client_inner_port = m_inner_port;
     s2rhdr.sub_type = S2R_CONNECT_RESULT;
+    PKT_S2R_HDR_HTON(&s2rhdr);
 
     MUTEX_LOCK(m_local_srv_lock);
     if (NULL == g_LocalServ)
@@ -126,12 +130,14 @@ int CClient::send_data_msg(char *buf, int buf_len)
 
     pkthdr.pkt_type = PKT_S2R;
     pkthdr.pkt_len = sizeof(PKT_S2R_HDR_T) + buf_len;
+    PKT_HDR_HTON(&pkthdr);
 
     s2rhdr.client_pub_ip = m_ipaddr;
     s2rhdr.client_pub_port = m_port;
     s2rhdr.client_inner_ip = m_inner_ipaddr;
     s2rhdr.client_inner_port = m_inner_port;
     s2rhdr.sub_type = S2R_DATA;
+    PKT_S2R_HDR_HTON(&s2rhdr);
 
     MUTEX_LOCK(m_local_srv_lock);
     if (NULL == g_LocalServ)

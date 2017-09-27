@@ -113,7 +113,7 @@ void CServCfgMgr::server_offline_handle(char *sn, char *pub_ip, char *pri_ip)
 
     if (is_found == false)
     {
-        _LOG_WARN("failed to get srv config for server sn %s when offline",sn);
+        _LOG_WARN("server(sn %s) has no server config when offline",sn);
     }
     MUTEX_UNLOCK(m_obj_lock);
 
@@ -152,7 +152,7 @@ int CServCfgMgr::server_online_handle(char *sn, char *pub_ip, char *pri_ip, CSer
 
     if (is_found == false)
     {
-        _LOG_WARN("failed to get srv config for server sn %s",sn);
+        _LOG_WARN("server(sn %s) has no server config when online",sn);
         /*添加一个配置*/
         tmp_srvCfg = add_server_cfg_by_pkt(sn, pub_ip, pri_ip);
         /*拷贝配置*/
@@ -234,7 +234,6 @@ int CServCfgMgr::add_server_cfg(CServerCfg *srvCfg)
     socksSrv = g_SocksSrvMgr->get_socks_server_by_innnerip(tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
     if (NULL == socksSrv)
     {
-        g_SocksSrvMgr->unlock();
         _LOG_WARN("socksserver %s(%s) not exist", tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
     }
     else
@@ -247,21 +246,43 @@ int CServCfgMgr::add_server_cfg(CServerCfg *srvCfg)
     return 0;
 }
 
-void CServCfgMgr::del_server_cfg(CServerCfg *srvCfg)
+void CServCfgMgr::del_server_cfg(char *sn)
 {
-    CServerCfg *tmp_srvCfg = this->find_server_cfg(srvCfg->m_sn);
-    if (NULL != tmp_srvCfg)
+    CServerCfg srvCfg;
+
+    /*清除配置*/
+    MUTEX_LOCK(m_obj_lock);
+    CServerCfg *tmp_srvCfg = this->find_server_cfg(sn);
+    if (NULL == tmp_srvCfg)
     {
-        _LOG_ERROR("sock srv(sn:%s) not exist when del", srvCfg->m_sn);
+        MUTEX_UNLOCK(m_obj_lock);
+        _LOG_ERROR("sock srv(sn:%s) not exist when del", sn);
         return;
     }
+    
+    _LOG_INFO("del server cfg: SN %s, pubip %s, priip %s", 
+        sn, tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
 
-    MUTEX_LOCK(m_obj_lock);
+    srvCfg = *tmp_srvCfg;
+
     m_objs.remove(tmp_srvCfg);
     MUTEX_UNLOCK(m_obj_lock);
-
     delete tmp_srvCfg;
 
-    _LOG_INFO("del server cfg: SN %s, pubip %s, priip %s", 
-        srvCfg->m_sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip);
+    /*通知server 关闭已有服务*/
+    CSocksSrv *socksSrv = NULL;
+    g_SocksSrvMgr->lock();
+    socksSrv = g_SocksSrvMgr->get_socks_server_by_innnerip(srvCfg.m_pub_ip, srvCfg.m_pri_ip);
+    if (NULL == socksSrv)
+    {
+        _LOG_WARN("socksserver %s(%s) not exist", srvCfg.m_pub_ip, srvCfg.m_pri_ip);
+    }
+    else
+    {
+        /*关闭连接*/
+        socksSrv->free();
+    }
+    g_SocksSrvMgr->unlock();
+
+    return;
 }

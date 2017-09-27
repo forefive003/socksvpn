@@ -55,11 +55,13 @@ int CLocalServer::send_register()
 
     pkthdr.pkt_type = PKT_S2R_REG;
     pkthdr.pkt_len = sizeof(PKT_SRV_REG_T);
+    PKT_HDR_HTON(&pkthdr);
 
     reginfo.local_ip = this->m_local_ipaddr;
     reginfo.local_port = this->m_local_port;
     reginfo.is_keepalive = 0;
     strncpy(reginfo.sn, g_server_sn, MAX_SN_LEN);
+    PKT_SRV_REG_HTON(&reginfo);
 
     MUTEX_LOCK(m_local_srv_lock);
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
@@ -88,12 +90,14 @@ int CLocalServer::send_keepalive()
 
     pkthdr.pkt_type = PKT_S2R_REG;
     pkthdr.pkt_len = sizeof(PKT_SRV_REG_T);
+    PKT_HDR_HTON(&pkthdr);
 
     reginfo.local_ip = this->m_local_ipaddr;
     reginfo.local_port = this->m_local_port;
     reginfo.is_keepalive = 1;
     strncpy(reginfo.sn, g_server_sn, MAX_SN_LEN);
-    
+    PKT_SRV_REG_HTON(&reginfo);
+
     MUTEX_LOCK(m_local_srv_lock);
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
@@ -230,7 +234,7 @@ int CLocalServer::msg_request_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int 
 
     _LOG_INFO("get remote info, ipaddr 0x%x, port %u", remote_ipaddr, remote_dstport);
     CRemote *pRemote = new CRemote(remote_ipaddr, remote_dstport, -1, pConn);
-    pRemote->init_async_write_resource(socks_malloc, socks_free);
+//    pRemote->init_async_write_resource(socks_malloc, socks_free);
 
     /*init中注册连接事件,有可能会立即回调connect_handle, 需要保证之前已经初始化m_request_time等*/
     g_total_connect_req_cnt++;
@@ -257,18 +261,8 @@ int CLocalServer::msg_client_close_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf,
                                 r2shdr->client_inner_port);
     if (NULL == pConn)
     {
-        struct sockaddr_storage ipaddr;
         char client_ipstr[HOST_IP_LEN] = { 0 };
-
-        memset((void*) &ipaddr, 0, sizeof(struct sockaddr_storage));
-        ipaddr.ss_family = AF_INET;
-        ((struct sockaddr_in *) &ipaddr)->sin_addr.s_addr = htonl(r2shdr->client_pub_ip);
-
-        if (NULL == util_ip_to_str(&ipaddr, client_ipstr)) 
-        {
-            _LOG_ERROR("ip to str failed.");
-            return -1;
-        }
+        engine_ipv4_to_str(htonl(r2shdr->client_pub_ip), client_ipstr);
 
         _LOG_WARN("failed to find connection for client %s/%u, inner 0x%x/%u, when recv client close msg",  
                 client_ipstr, r2shdr->client_pub_port,
@@ -293,18 +287,8 @@ int CLocalServer::msg_client_close_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf,
 
 int CLocalServer::msg_data_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len)
 {
-    struct sockaddr_storage ipaddr;
     char client_ipstr[HOST_IP_LEN] = { 0 };
-
-    memset((void*) &ipaddr, 0, sizeof(struct sockaddr_storage));
-    ipaddr.ss_family = AF_INET;
-    ((struct sockaddr_in *) &ipaddr)->sin_addr.s_addr = htonl(r2shdr->client_pub_ip);
-
-    if (NULL == util_ip_to_str(&ipaddr, client_ipstr)) 
-    {
-        _LOG_ERROR("ip to str failed.");
-        return -1;
-    }
+    engine_ipv4_to_str(htonl(r2shdr->client_pub_ip), client_ipstr);
 
     CConnection *pConn = (CConnection*)g_ConnMgr->get_conn_by_client(r2shdr->client_pub_ip, 
                                 r2shdr->client_pub_port,
@@ -337,7 +321,10 @@ int CLocalServer::pdu_handle(char *pdu_buf, int pdu_len)
     int ret = 0;
 
     PKT_HDR_T *pkthdr = (PKT_HDR_T*)pdu_buf;
+
     PKT_R2S_HDR_T *r2shdr = (PKT_R2S_HDR_T*)(pdu_buf + sizeof(PKT_HDR_T));
+    PKT_R2S_HDR_NTOH(r2shdr);
+
     char *data_buf = NULL;
     int data_len = 0;
     if (pkthdr->pkt_type != PKT_R2S)
@@ -402,6 +389,8 @@ int CLocalServer::recv_handle(char *buf, int buf_len)
             return 0;
         }
         PKT_HDR_T *pkthdr = (PKT_HDR_T*)m_recv_buf;
+        PKT_HDR_NTOH(pkthdr);
+        
         if (pkthdr->pkt_len > (sizeof(m_recv_buf) - sizeof(PKT_HDR_T)))
         {
             _LOG_ERROR("cur recv %d, but pktlen %u too long", m_recv_len, pkthdr->pkt_len);
@@ -411,6 +400,7 @@ int CLocalServer::recv_handle(char *buf, int buf_len)
         if (m_recv_len < (int)(sizeof(PKT_HDR_T) + pkthdr->pkt_len))
         {
             _LOG_DEBUG("cur recv %d, need %d, wait for data", m_recv_len, (sizeof(PKT_HDR_T) + pkthdr->pkt_len));
+            PKT_HDR_HTON(pkthdr);
             return 0;
         }
 
