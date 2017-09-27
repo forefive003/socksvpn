@@ -1,0 +1,20 @@
+1. curl:
+./configure --without-ssl --without-zlib --disable-rt
+make
+得到include,so和a
+
+
+2. openssl:
+如果定义了SUPPORT_MULTHREAD, 可以不编译openssl
+./config --prefix=/tmp/openssl1 --openssldir=/tmp/openssl2
+make
+得到include,a
+
+
+3.xjson:
+因为server的系统问题, 去掉了config.h中：
+#define HAVE_LOCALE_H 1
+#define HAVE_SETLOCALE 1
+#define HAVE_USELOCALE 1
+#define HAVE_XLOCALE_H 1
+

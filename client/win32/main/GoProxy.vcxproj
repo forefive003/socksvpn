@@ -1,0 +1,301 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{022BBD6B-F391-434F-BAAA-DD73B4AAD7A4}</ProjectGuid>
+    <RootNamespace>GoProxy</RootNamespace>
+    <Keyword>MFCProj</Keyword>
+    <ProjectName>GoProxy</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Static</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Static</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>Static</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>Static</UseOfMfc>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(ProjectDir)\inject;$(ProjectDir)\tookkit;$(ProjectDir)\src;$(ProjectDir)\..\..\..\client\remote;$(ProjectDir)\..\..\..\client;$(ProjectDir)\..\..\..\public\xutil\include;$(ProjectDir)\..\..\..\public\socks5lib;$(ProjectDir)\..\..\..\public\netpool\include;$(IncludePath)</IncludePath>
+    <TargetName>GoProxy</TargetName>
+    <SourcePath>$(ProjectDir)\..\..\..\public\netpool\src;$(ProjectDir)\..\..\..\public\netpool\outclass;$(ProjectDir)\..\..\..\public\xutil\src;$(SourcePath)</SourcePath>
+    <OutDir>$(SolutionDir)\..\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(ProjectDir)\tookkit;$(ProjectDir)\src;$(ProjectDir)\..\..\..\client;$(ProjectDir)\..\..\..\public\xutil;$(ProjectDir)\..\..\..\public\socks5lib;$(ProjectDir)\..\..\..\public\netpool;$(IncludePath)</IncludePath>
+    <TargetName>GoProxy</TargetName>
+    <SourcePath>$(ProjectDir)\..\..\..\public\netpool\src;$(ProjectDir)\..\..\..\public\netpool\outclass;$(ProjectDir)\..\..\..\public\xutil\src;$(SourcePath)</SourcePath>
+    <OutDir>$(SolutionDir)\..\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <ValidateAllParameters>true</ValidateAllParameters>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>Disabled</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;NO_WARN_MBCS_MFC_DEPRECATION;_WINSOCK_DEPRECATED_NO_WARNINGS;DLL_IMPORT_NP;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalOptions>/SUBSYSTEM:WINDOWS,"5.01" %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <ValidateAllParameters>true</ValidateAllParameters>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>Disabled</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;NO_WARN_MBCS_MFC_DEPRECATION;_WINSOCK_DEPRECATED_NO_WARNINGS;DLL_IMPORT_NP;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <UACExecutionLevel>AsInvoker</UACExecutionLevel>
+    </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\public\socks5lib\CBaseConn.h" />
+    <ClInclude Include="..\..\..\public\socks5lib\CBaseObj.h" />
+    <ClInclude Include="..\..\..\public\socks5lib\CConMgr.h" />
+    <ClInclude Include="..\..\..\public\socks5lib\CSocksMem.h" />
+    <ClInclude Include="..\..\..\public\socks5lib\relay_pkt_def.h" />
+    <ClInclude Include="..\..\CClient.h" />
+    <ClInclude Include="..\..\CConnection.h" />
+    <ClInclude Include="..\..\CLocalServer.h" />
+    <ClInclude Include="..\..\proxyConfig.h" />
+    <ClInclude Include="..\..\remote\CRemoteServer.h" />
+    <ClInclude Include="..\..\remote\CSrvRemote.h" />
+    <ClInclude Include="..\..\remote\CVpnRemote.h" />
+    <ClInclude Include="GoProxy.h" />
+    <ClInclude Include="GoProxyDlg.h" />
+    <ClInclude Include="GoProxyProcDlg.h" />
+    <ClInclude Include="inject\inject.h" />
+    <ClInclude Include="lib\netpool\CNetAccept.h" />
+    <ClInclude Include="lib\netpool\CNetRecv.h" />
+    <ClInclude Include="lib\netpool\netpool.h" />
+    <ClInclude Include="lib\xutil\commtype.h" />
+    <ClInclude Include="lib\xutil\engine_ip.h" />
+    <ClInclude Include="lib\xutil\engine_ip_range.h" />
+    <ClInclude Include="lib\xutil\list.h" />
+    <ClInclude Include="lib\xutil\logproc.h" />
+    <ClInclude Include="lib\xutil\mempool.h" />
+    <ClInclude Include="lib\xutil\rand.h" />
+    <ClInclude Include="lib\xutil\socketwrap.h" />
+    <ClInclude Include="lib\xutil\squeue.h" />
+    <ClInclude Include="lib\xutil\utilfile.h" />
+    <ClInclude Include="lib\xutil\utilstr.h" />
+    <ClInclude Include="tookkit\XPProgDlg.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="inject\CMemPtr.h" />
+    <ClInclude Include="src\common.h" />
+    <ClInclude Include="inject\injectDll32.h" />
+    <ClInclude Include="inject\injectDll64.h" />
+    <ClInclude Include="inject\internal.h" />
+    <ClInclude Include="src\procCommServ.h" />
+    <ClInclude Include="src\procMgr.h" />
+    <ClInclude Include="src\clientMain.h" />
+    <ClInclude Include="src\proxy_client\CRemoteServer.h" />
+    <ClInclude Include="inject\wow64ext.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="tookkit\XPButton.h" />
+    <ClInclude Include="tookkit\XPEdit.h" />
+    <ClInclude Include="tookkit\XPListCtrl.h" />
+    <ClInclude Include="tookkit\XPTipDlg.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\public\socks5lib\CBaseConn.cpp" />
+    <ClCompile Include="..\..\..\public\socks5lib\CBaseObj.cpp" />
+    <ClCompile Include="..\..\..\public\socks5lib\CConMgr.cpp" />
+    <ClCompile Include="..\..\..\public\socks5lib\CSocksMem.cpp" />
+    <ClCompile Include="..\..\CClient.cpp" />
+    <ClCompile Include="..\..\CLocalServer.cpp" />
+    <ClCompile Include="..\..\proxyConfig.cpp" />
+    <ClCompile Include="..\..\remote\CRemoteServer.cpp" />
+    <ClCompile Include="..\..\remote\CSrvRemote.cpp" />
+    <ClCompile Include="..\..\remote\CVpnRemote.cpp" />
+    <ClCompile Include="GoProxy.cpp" />
+    <ClCompile Include="GoProxyDlg.cpp" />
+    <ClCompile Include="GoProxyProcDlg.cpp" />
+    <ClCompile Include="inject\inject.cpp" />
+    <ClCompile Include="inject\injectDll32.cpp" />
+    <ClCompile Include="inject\injectDll64.cpp" />
+    <ClCompile Include="tookkit\XPProgDlg.cpp" />
+    <ClCompile Include="src\procCommServ.cpp" />
+    <ClCompile Include="src\procMgr.cpp" />
+    <ClCompile Include="src\clientMain.cpp" />
+    <ClCompile Include="inject\wow64ext.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="tookkit\XPButton.cpp" />
+    <ClCompile Include="tookkit\XPEdit.cpp" />
+    <ClCompile Include="tookkit\XPListCtrl.cpp" />
+    <ClCompile Include="tookkit\XPTipDlg.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="GoProxy.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\public\socks5lib\Makefile" />
+    <None Include="Release\res\GoProxy.rc2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="GoProxy.ico" />
+    <Image Include="Release\res\GoProxy.ico" />
+    <Image Include="res\GoProxy.ico" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="GoProxy.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>
