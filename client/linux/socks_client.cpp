@@ -165,14 +165,10 @@ static int cmd_parser(proxy_cfg_t *proxy_cfg, int argc, char *argv[])
     engine_ipv4_to_str(htonl(proxy_cfg->vpn_ip), ipstr);
     printf("relay server: %s:%u\n", ipstr, proxy_cfg->vpn_port);
 
-	#if 0
-	if (g_username[0] == 0 && g_password[0] == 0)
+	if (proxy_cfg->username[0] != 0 && proxy_cfg->passwd[0] != 0)
 	{
-		printf("No username and password params\n");
-		Usage(argv[0]);
-		return -1;
+		proxy_cfg->is_auth = true;
 	}
-	#endif
 	
 	return 0;
 }

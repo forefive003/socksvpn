@@ -7,9 +7,6 @@
 #include "squeue.h"
 #include "engine_ip.h"
 
-#define DEF_WR_TIMEOUT 3
-#define DEF_RD_TIMEOUT 3
-
 #define BUF_NODE_SIZE 1500
 
 typedef struct 
