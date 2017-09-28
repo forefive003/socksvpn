@@ -328,7 +328,7 @@ int CWebApi::_parseServerList(struct json_object *listObj)
 int CWebApi::getRelayConfig(char *relaySn)
 {
 	char urlreq[256] = {0};
-	snprintf(urlreq, 256, "%s?relaysn=%s", m_url.c_str(), relaySn);
+	snprintf(urlreq, 256, "%s/api?relaysn=%s", m_url.c_str(), relaySn);
 	std::string urlStr = urlreq;
 	std::string responseStr;
 
