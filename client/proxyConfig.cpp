@@ -4,6 +4,11 @@
 #include "common_def.h"
 #include "proxyConfig.h"
 
+#include "CNetAccept.h"
+#include "CNetRecv.h"
+#include "CRemoteServer.h"
+#include "CLocalServer.h"
+
 #ifdef _WIN32
 #include "procMgr.h"
 #else
@@ -209,7 +214,6 @@ void proxy_cfg_del_proc(char *exe_name)
 }
 
 
-#ifdef _WIN32
 static inline bool _proxy_is_cfg_need_restart(proxy_cfg_t *config)
 {
 	if (config->proxy_type != g_proxy_cfg.proxy_type
@@ -220,6 +224,7 @@ static inline bool _proxy_is_cfg_need_restart(proxy_cfg_t *config)
 	}
 
 	if (config->server_ip != g_proxy_cfg.server_ip
+			|| config->local_port != g_proxy_cfg.local_port
 			|| config->is_auth != g_proxy_cfg.is_auth
 			|| config->proxy_proto != g_proxy_cfg.proxy_proto
 			|| (strncmp(config->username, g_proxy_cfg.username, sizeof(config->username)) != 0)
@@ -230,7 +235,6 @@ static inline bool _proxy_is_cfg_need_restart(proxy_cfg_t *config)
 
 	return false;
 }
-#endif
 
 int proxy_cfg_set(proxy_cfg_t *config)
 {
@@ -250,6 +254,15 @@ int proxy_cfg_set(proxy_cfg_t *config)
 
 			/*需要先停止所有代理, 再启动所有代理*/
 			proxy_proc_mgr_stop();
+			/*停止local 和 remote server*/
+			if (g_LocalServ != NULL)
+				g_LocalServ->free();
+
+			MUTEX_LOCK(m_remote_srv_lock);
+			if (g_RemoteServ != NULL)
+				g_RemoteServ->free();
+			MUTEX_UNLOCK(m_remote_srv_lock);
+			
 			memcpy(&g_proxy_cfg, config, sizeof(proxy_cfg_t));
 			proxy_proc_mgr_start();
 		}

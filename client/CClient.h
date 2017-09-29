@@ -51,6 +51,8 @@ private:
 public:   
 	void set_real_server(uint32_t real_serv, uint16_t real_port);
 	void get_real_server(uint32_t *real_serv, uint16_t *real_port);
+	void set_real_domain(char *domain_name);
+	void get_real_domain(char *domain_name);
 
 	int get_client_status();
 	void set_client_status(SOCKS_STATUS_E status); 
@@ -79,6 +81,7 @@ public:
 
 	uint32_t m_real_remote_ipaddr; /*真实的远端服务器ip*/
     uint16_t m_real_remote_port; /*真实的远端服务器端口*/
+    char m_remote_domain[HOST_DOMAIN_LEN + 1];
 };
 
 #endif

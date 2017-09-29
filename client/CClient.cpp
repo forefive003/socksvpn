@@ -172,6 +172,9 @@ int CClient::socks_parse_connect(char *buf, int buf_len)
 
         memcpy(&remote_dstport, &buf[5 + buf[4]], 2);
         remote_dstport = ntohs(remote_dstport);
+
+        this->set_real_server(0, remote_dstport);
+        this->set_real_domain(remote_domain);
         _LOG_INFO("connect request domain %s, port %u", remote_domain, remote_dstport);
         break;
     case 0x04: /* IPv6 */
@@ -554,4 +557,16 @@ void CClient::get_real_server(uint32_t *real_serv, uint16_t *real_port)
 {
     *real_serv = m_real_remote_ipaddr;
     *real_port = m_real_remote_port;
+}
+
+void CClient::set_real_domain(char *domain_name)
+{
+	memset(m_remote_domain, 0, HOST_DOMAIN_LEN + 1);
+	strncpy(m_remote_domain, domain_name, HOST_DOMAIN_LEN);
+}
+
+void CClient::get_real_domain(char *domain_name)
+{
+	memset(domain_name, 0, HOST_DOMAIN_LEN + 1);
+	strncpy(domain_name, m_remote_domain, HOST_DOMAIN_LEN);
 }
