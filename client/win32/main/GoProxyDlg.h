@@ -39,6 +39,7 @@ protected:
 
 	afx_msg LRESULT OnTopShow(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnTrayNotify(WPARAM wParam,LPARAM lParam);
+	afx_msg void OnMyAppExitMenu();
 
 	DECLARE_MESSAGE_MAP()
 public:
@@ -61,6 +62,7 @@ private:
 	
 public:
 	CStatusBarCtrl  m_StatusBar;
+	CStatusBarCtrl  m_StatusBar1;
 
 	CComboBox m_cmb_proxy_type;
 	CIPAddressCtrl m_vpn_ipaddr;

@@ -224,7 +224,6 @@ static inline bool _proxy_is_cfg_need_restart(proxy_cfg_t *config)
 	}
 
 	if (config->server_ip != g_proxy_cfg.server_ip
-			|| config->local_port != g_proxy_cfg.local_port
 			|| config->is_auth != g_proxy_cfg.is_auth
 			|| config->proxy_proto != g_proxy_cfg.proxy_proto
 			|| (strncmp(config->username, g_proxy_cfg.username, sizeof(config->username)) != 0)
@@ -245,6 +244,27 @@ int proxy_cfg_set(proxy_cfg_t *config)
 
 	if (g_is_start)
 	{
+		if(config->local_port != g_proxy_cfg.local_port)
+		{
+			/*停止local*/
+			if (g_LocalServ != NULL)
+			{
+				if (MessageBox(NULL, "本地监听端口变化, 需要重启监听服务, 确定要修改吗?", "提示", MB_OKCANCEL) != IDOK)
+				{
+					return 0;
+				}
+
+				g_LocalServ->free();
+
+				g_LocalServ = new CLocalServer(config->local_port);
+			    if(0 != g_LocalServ->init())
+			    {
+			    	MessageBox(NULL, _T("local server init failed!"), _T("Error"), MB_OK);
+			        return -1;
+			    }				
+			}
+		}
+
 		if (_proxy_is_cfg_need_restart(config))
 		{
 			if (MessageBox(NULL, "代理配置变化, 当前已启动代理将重新生效, 确定要修改吗？", "提示", MB_OKCANCEL) != IDOK)
@@ -254,10 +274,8 @@ int proxy_cfg_set(proxy_cfg_t *config)
 
 			/*需要先停止所有代理, 再启动所有代理*/
 			proxy_proc_mgr_stop();
-			/*停止local 和 remote server*/
-			if (g_LocalServ != NULL)
-				g_LocalServ->free();
 
+			/*remote server*/
 			MUTEX_LOCK(m_remote_srv_lock);
 			if (g_RemoteServ != NULL)
 				g_RemoteServ->free();
