@@ -332,7 +332,7 @@ int main(int argc, char **argv)
     np_start();
     while(g_exit == false)
     {
-        usleep(1000);
+        sleep(1);
     }
     np_wait_stop();
 
