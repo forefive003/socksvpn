@@ -86,10 +86,10 @@ public:
 	CXPButton m_btnExit;	
 	CXPButton m_btnStart;
 	#else
-	CButton m_btnProcCfg;
-	CButton m_btnSaveCfg;
-	CButton m_btnExit;	
-	CButton m_btnStart;
+	CXPButton m_btnProcCfg;
+	CXPButton m_btnSaveCfg;
+	CXPButton m_btnExit;	
+	CXPButton m_btnStart;
 	#endif
 	CComboBox m_cmbServers;
 	CXPButton m_btnSrvFresh;

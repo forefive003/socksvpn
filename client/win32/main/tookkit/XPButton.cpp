@@ -219,10 +219,10 @@ void CXPButton::DoGradientFill(CDC *pDC, CRect* rect)
     //int i;
     brBk[0].CreateSolidBrush(RGB(255,0,0));
     brBk[1].CreateSolidBrush(RGB(0,0,0));
-    //brBk[2].CreateSolidBrush(RGB(0,128,128));
-	brBk[2].CreateSolidBrush(RGB(0,128,0));
+    brBk[2].CreateSolidBrush(RGB(0,128,255));
+	//brBk[2].CreateSolidBrush(RGB(0,128,0));
 	
-    brBk[3].CreateSolidBrush(RGB(0,255,0));
+    brBk[3].CreateSolidBrush(RGB(30,255,255));
  /*
     CBitmap bitmap;
     BITMAP bmp;

@@ -204,7 +204,7 @@ int CClient::socks_proto5_handle(char *buf, int buf_len)
 	this->m_socks_proto_version = 5;
 
 	/*添加一个远程连接*/
-	if (is_remote_connected())
+	if (is_remote_authed())
 	{
 		proxy_cfg_t* cfginfo = proxy_cfg_get();
 		CConnection *pConn = (CConnection *)this->m_owner_conn;
@@ -258,7 +258,7 @@ int CClient::socks_proto4_handle(char *buf, int buf_len)
 	this->m_socks_proto_version = 4;
 
 	/*添加一个远程连接*/
-	if (is_remote_connected())
+	if (is_remote_authed())
 	{
 		proxy_cfg_t* cfginfo = proxy_cfg_get();
 		CConnection *pConn = (CConnection *)this->m_owner_conn;

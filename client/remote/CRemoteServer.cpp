@@ -16,10 +16,22 @@
 MUTEX_TYPE m_remote_srv_lock;
 CRemoteServer *g_RemoteServ = NULL;
 
-BOOL is_remote_connected()
+BOOL is_remote_authed()
 {
     MUTEX_LOCK(m_remote_srv_lock);
     if (g_RemoteServ && g_RemoteServ->is_authed())
+    {
+        MUTEX_UNLOCK(m_remote_srv_lock);
+        return TRUE;
+    }
+    MUTEX_UNLOCK(m_remote_srv_lock);
+    return FALSE;
+}
+
+BOOL is_remote_connected()
+{
+    MUTEX_LOCK(m_remote_srv_lock);
+    if (g_RemoteServ && g_RemoteServ->is_connected())
     {
         MUTEX_UNLOCK(m_remote_srv_lock);
         return TRUE;
