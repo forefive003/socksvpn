@@ -30,6 +30,9 @@ char g_relaysn[MAX_SN_LEN] = {0};
 char g_relay_passwd[MAX_PASSWD_LEN] = {0};
 char g_relay_url[MAX_URL_LEN] = {0};
 
+/*0为不记录日志*/
+static int g_is_log = 0;
+
 static BOOL g_exit = false;
 
 BOOL is_relay_need_platform()
@@ -49,6 +52,7 @@ static void Usage(char *program)
     printf("%-8s -a <the url of manager plain, for example: www.domain.com:port>\n", "");
     printf("%-8s -n <the sn of relay server, max 32 bytes len, for example: AABBCCDD002233bb>\n", "");
     printf("%-8s -w <the passwd of relay server when recv from platform, max 32 bytes len, for example: abc123>\n", "");
+    printf("%-8s -d <0|log_level(debug:1,info:2,warn:3,error:4)>, 0:not write log, otherwith write log\n", "");
 }
 
 /*
@@ -61,8 +65,11 @@ static int cmd_parser(int argc, char *argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "hc:s:a:n:w:h")) != -1) {
+    while ((opt = getopt(argc, argv, "hc:s:a:n:w:hd:")) != -1) {
         switch (opt) {
+        case 'd':
+            g_is_log = atoi(optarg);
+            break;
         case 'c':
             g_client_port = atoi(optarg);
             printf("get option: listen port that client connect to is %u\n", g_client_port);
@@ -257,7 +264,14 @@ int main(int argc, char **argv)
     }
 
     loggger_init((char*)"/tmp/", (char*)"socks_relay", 1 * 1024, 6, true);
-    logger_set_level(L_INFO);
+    if (g_is_log > 0)
+    {
+       logger_set_level(g_is_log - 1);
+    }
+    else
+    {
+       logger_set_level(L_QUIET); 
+    }
 
     register_signal();
     

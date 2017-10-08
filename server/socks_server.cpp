@@ -24,7 +24,7 @@ encry_key_t *g_encry_key = NULL;
 int g_encry_method = 0;
 
 /*0为不记录日志*/
-int g_is_log = 0;
+static int g_is_log = 0;
 
 char g_server_sn[MAX_SN_LEN] = {0};
 

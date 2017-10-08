@@ -43,7 +43,8 @@ BOOL is_remote_connected()
 void CRemoteServer::free_handle()
 {
     ///TODO:
-    //g_ConnMgr->free_all_conn();
+    g_ConnMgr->free_all_conn();
+    
     /*set to null, re init in timer*/
     MUTEX_LOCK(m_remote_srv_lock);
     delete g_RemoteServ;

@@ -2,6 +2,8 @@
 #ifndef _NET_CONNECTION_H
 #define _NET_CONNECTION_H
 
+#define  FRAME_LEN  900
+
 class CBaseConnection
 {
 public:

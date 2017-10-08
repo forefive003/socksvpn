@@ -141,7 +141,16 @@ int CBaseConnection::fwd_client_data_msg(char *buf, int buf_len)
     MUTEX_LOCK(m_remote_lock);
     if (m_remote != NULL)
     {
-        ret = m_remote->send_data_msg(buf, buf_len);
+        if (buf_len > FRAME_LEN)
+        {
+            ret = m_remote->send_data_msg(buf, FRAME_LEN);
+            ret |= m_remote->send_data_msg(buf+FRAME_LEN, buf_len-FRAME_LEN);
+        }
+        else
+        {
+            ret = m_remote->send_data_msg(buf, buf_len);
+        }
+
         _LOG_DEBUG("client(%s/%u/%s/%u/fd%d) forward data to remote, len %d", 
             m_client->get_ipstr(), m_client->get_port(), 
             m_client->m_inner_ipstr, m_client->m_inner_port,
@@ -168,7 +177,16 @@ int CBaseConnection::fwd_remote_data_msg(char *buf, int buf_len)
     MUTEX_LOCK(m_remote_lock);
     if (m_client != NULL)
     {
-        ret = m_client->send_data_msg(buf, buf_len);
+        if (buf_len > FRAME_LEN)
+        {
+            ret = m_client->send_data_msg(buf, FRAME_LEN);
+            ret |= m_client->send_data_msg(buf+FRAME_LEN, buf_len-FRAME_LEN);
+        }
+        else
+        {
+            ret = m_client->send_data_msg(buf, buf_len);
+        }
+        
         _LOG_DEBUG("client(%s/%u/%s/%u/fd%d) forward data to client, len %d", 
             m_client->get_ipstr(), m_client->get_port(), 
             m_client->m_inner_ipstr, m_client->m_inner_port,
