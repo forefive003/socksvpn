@@ -56,7 +56,7 @@ const char* g_proxy_cfg_proto_desc[] = {
 const char* g_proxy_cfg_type_desc[] = {
 	"Invalid Mode",
 	"VPN Server Mode",
-	"Normal Server Mode"
+	"Proxy Server Mode"
 };
 const char* g_proxy_cfg_encry_type_desc[] = {
 	"Invalid",

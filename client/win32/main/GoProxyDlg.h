@@ -95,4 +95,5 @@ public:
 	CXPButton m_btnSrvFresh;
 
 	afx_msg void OnBnClickedBtnSrvFresh();
+	CStatic m_server_static;
 };
