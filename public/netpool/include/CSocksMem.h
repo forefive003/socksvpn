@@ -10,5 +10,6 @@ extern int socks_mem_init(uint32_t node_cnt);
 extern void socks_mem_destroy();
 
 extern unsigned int socks_mem_get_used_cnt();
+extern unsigned int socks_mem_get_free_cnt();
 
 #endif

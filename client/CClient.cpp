@@ -15,7 +15,7 @@ int CClient::register_req_handle(char *buf, int buf_len)
 {
 	register_req_t  *reg_req = (register_req_t*)buf;
 
-	if (buf_len < sizeof(register_req_t))
+	if (buf_len < (int)sizeof(register_req_t))
 	{
 		_LOG_ERROR("client(%s/%u/fd%d) handle register failed", m_ipstr, m_port, m_fd);
 		return -1;

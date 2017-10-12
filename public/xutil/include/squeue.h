@@ -15,6 +15,7 @@ typedef struct s_queue_head
 {
 	struct list_head *first;  /*执行第一个节点*/
 	struct list_head **last_addr; /*最后一个节点的地址*/
+	unsigned int count;
 }sq_head_t;
 
 #define SQUEUE_EMPTY(head) (NULL == (head)->first)
@@ -22,6 +23,7 @@ typedef struct s_queue_head
 #define SQUEUE_INIT_HEAD(ptr) do { \
     (ptr)->first = NULL;\
     (ptr)->last_addr = &(ptr)->first;\
+    (ptr)->count=0;\
 } while (0)
 
 #define SQUEUE_INIT_NODE(ptr) do { \
@@ -44,6 +46,8 @@ static inline void squeue_copy(sq_head_t *dst, sq_head_t *src)
 		/*否则初始化为空表*/
 		SQUEUE_INIT_HEAD(dst);
 	}
+
+	dst->count = src->count;
 }
 
 static inline void squeue_inq(struct list_head *elment, struct s_queue_head *head)
@@ -53,6 +57,7 @@ static inline void squeue_inq(struct list_head *elment, struct s_queue_head *hea
 	elment->prev = (struct list_head*)head->last_addr;
 	*head->last_addr = elment;
 	head->last_addr = &elment->next;
+	head->count++;
 }
 
 static inline void squeue_insert_prev(struct s_queue_head *head,
@@ -75,6 +80,8 @@ static inline void squeue_insert_prev(struct s_queue_head *head,
 	{
 		tmp_node->next = node;
 	}
+
+	head->count++;
 }
 
 static inline struct list_head* squeue_deq(struct s_queue_head *head)
@@ -99,6 +106,7 @@ static inline struct list_head* squeue_deq(struct s_queue_head *head)
 		ret->next->prev = ret->prev;
 	}
 
+	head->count--;
 	return ret;
 }
 
@@ -131,6 +139,7 @@ static inline struct list_head* squeue_deq_condition(struct s_queue_head *head,
 		ret->next->prev = ret->prev;
 	}
 
+	head->count--;
 	return ret;
 }
 

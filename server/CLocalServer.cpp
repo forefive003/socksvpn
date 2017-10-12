@@ -449,6 +449,7 @@ int CLocalServer::send_pre_handle()
     while (itr != g_ConnMgr->m_conn_objs.rend())
     {
         connObj = (CConnection*)*itr;
+        itr++;
 
         MUTEX_LOCK(connObj->m_remote_lock);
         if (NULL != connObj->m_client)
@@ -475,6 +476,7 @@ int CLocalServer::send_post_handle()
     while (itr != g_ConnMgr->m_conn_objs.rend())
     {
         connObj = (CConnection*)*itr;
+        itr++;
 
         MUTEX_LOCK(connObj->m_event_lock);
         if (connObj->is_client_busy())

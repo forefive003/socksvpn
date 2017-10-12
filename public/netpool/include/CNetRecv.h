@@ -81,16 +81,21 @@ public:
     uint16_t m_local_port;
 
     CSocksSendQ m_send_q;
+    unsigned int m_send_q_busy_cnt;
 
 private:
     unsigned int m_thrd_index;
-    bool m_is_async_write;  
+    bool m_is_async_write;
 
     MUTEX_TYPE m_free_lock; /*send_data and free maybe called in diffrent thread,
                                 so protect them*/
     bool m_is_connected;
     bool m_is_register_write;
     bool m_is_freeing;
+    bool m_is_pause_read;
+    bool m_is_fwd_server; /*whether forward data that recv by self to another fd,
+                        if yes, not pause read when local send busy, otherwith pause,
+                        default is true*/
 };
 
 #endif

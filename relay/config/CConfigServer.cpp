@@ -26,7 +26,7 @@ int CConfigAccept::accept_handle(int conn_fd, uint32_t client_ip, uint16_t clien
     setsockopt(conn_fd, SOL_TCP, TCP_KEEPCNT, (void *)&keepcount , sizeof(keepcount ));
 
     CConfigSrv *cfgSrv = new CConfigSrv(client_ip, client_port, conn_fd);
-    cfgSrv->init_async_write_resource(socks_malloc, socks_free);
+    //cfgSrv->init_async_write_resource(socks_malloc, socks_free);
     if (0 != cfgSrv->init())
     {
         delete cfgSrv;

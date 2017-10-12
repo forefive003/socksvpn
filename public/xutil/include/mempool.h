@@ -49,7 +49,7 @@ DLL_API void* mpool_malloc(MEM_POOL_T *pool);
 DLL_API void mpool_free(MEM_POOL_T *pool, void *ptr);
 
 DLL_API unsigned int mpoll_get_used_cnt(MEM_POOL_T *pool);
-
+DLL_API unsigned int mpoll_get_free_cnt(MEM_POOL_T *pool);
 
 #ifdef __cplusplus
 }

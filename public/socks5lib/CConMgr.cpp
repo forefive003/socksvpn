@@ -110,8 +110,8 @@ uint32_t CConnMgr::get_cur_conn_cnt()
 
 void CConnMgr::print_statistic(FILE *pFd, bool is_detail)
 {
-    fprintf(pFd, "CONNECTION-STAT: cur conn %d, cur pool used %d\n", 
-        m_conn_cnt, socks_mem_get_used_cnt());
+    fprintf(pFd, "CONNECTION-STAT: cur conn %d, cur pool used %d, free %d\n", 
+        m_conn_cnt, socks_mem_get_used_cnt(), socks_mem_get_free_cnt());
 
     if (false == is_detail)
     {

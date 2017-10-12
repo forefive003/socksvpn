@@ -10,8 +10,8 @@ extern "C"
 #endif
 	
 DLL_API int util_strlen(char *);
-DLL_API bool util_strncmp(char *, char *, int);
-DLL_API bool util_strcmp(char *, char *);
+DLL_API int util_strncmp(char *, char *, int);
+DLL_API int util_strcmp(char *, char *);
 DLL_API int util_strncpy(char *, char *, int);
 DLL_API int util_strcpy(char *, char *);
 DLL_API void util_memcpy(void *, void *, int);
