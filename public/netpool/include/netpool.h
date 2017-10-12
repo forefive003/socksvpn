@@ -57,8 +57,14 @@ DLL_API BOOL np_add_read_job(read_hdl_func read_func,
 				int bufferSize = 0);
 DLL_API BOOL np_add_udp_read_job(udp_read_hdl_func read_func,
 				int  fd, void* param1,
+				unsigned int thrd_index = 256,
 				int bufferSize = 0);
 DLL_API BOOL np_del_read_job(int  fd, free_hdl_func free_func = NULL);
+
+
+DLL_API BOOL np_pause_read_on_job(int  fd);
+DLL_API BOOL np_resume_read_on_job(int  fd);
+DLL_API BOOL np_del_io_job(int fd, free_hdl_func free_func = NULL);
 
 DLL_API BOOL np_add_write_job(write_hdl_func write_func,
 				int  fd, void* param1,

@@ -8,6 +8,7 @@ public:
     {
         _LOG_DEBUG("construct client");
     }
+
     virtual ~CClient()
     {
         _LOG_DEBUG("destruct client");

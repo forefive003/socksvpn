@@ -438,3 +438,57 @@ void CLocalServer::free_handle()
     g_LocalServ = NULL;
     MUTEX_UNLOCK(m_local_srv_lock);
 }
+
+int CLocalServer::send_pre_handle()
+{
+    /*iterator all connection, and move their send node to self's*/
+    CConnection *connObj = NULL;
+
+    MUTEX_LOCK(g_ConnMgr->m_obj_lock);
+    CONN_LIST_RItr itr = g_ConnMgr->m_conn_objs.rbegin();
+    while (itr != g_ConnMgr->m_conn_objs.rend())
+    {
+        connObj = (CConnection*)*itr;
+
+        MUTEX_LOCK(connObj->m_remote_lock);
+        if (NULL != connObj->m_client)
+        {
+            if(connObj->m_client->m_send_q.node_cnt() > 0)
+            {
+                this->m_send_q.queue_cat(connObj->m_client->m_send_q);
+            }
+        }
+        MUTEX_UNLOCK(connObj->m_remote_lock);        
+    }
+    MUTEX_UNLOCK(g_ConnMgr->m_obj_lock);
+
+    return 0;
+}
+
+int CLocalServer::send_post_handle()
+{
+    /*iterator all connection, register read evt if paused*/
+    CConnection *connObj = NULL;
+
+    MUTEX_LOCK(g_ConnMgr->m_obj_lock);
+    CONN_LIST_RItr itr = g_ConnMgr->m_conn_objs.rbegin();
+    while (itr != g_ConnMgr->m_conn_objs.rend())
+    {
+        connObj = (CConnection*)*itr;
+
+        MUTEX_LOCK(connObj->m_event_lock);
+        if (connObj->is_client_busy())
+        {
+            connObj->set_client_busy(false);
+        }
+        if (connObj->is_remote_pause_read())
+        {
+            /*register read event*/
+            this->resume_read();
+            connObj->set_remote_pause_read(false);
+        }
+        MUTEX_LOCK(connObj->m_event_lock);
+    }
+    MUTEX_UNLOCK(g_ConnMgr->m_obj_lock);
+    return 0;
+}

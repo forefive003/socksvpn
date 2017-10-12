@@ -7,6 +7,9 @@
 #include "CClient.h"
 #include "CRemote.h"
 
+#define  CLI_SEND_Q_MAX_CNT  8
+#define  SRV_SEND_Q_MAX_CNT  1024
+
 class CConnection : public CBaseConnection
 {
 /*no extra function to be used*/
@@ -52,6 +55,7 @@ public:
         m_send_client_data_cnt = 0;
         m_send_remote_data_cnt = 0;
     }
+
 public:
     uint64_t m_client_connect_resp_cnt;
 };

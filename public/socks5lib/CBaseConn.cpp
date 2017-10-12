@@ -20,8 +20,12 @@ CBaseConnection::CBaseConnection()
     m_send_client_bytes = 0;
     m_send_remote_bytes = 0;
 
+    m_is_client_busy = false;
+    m_is_remote_busy = false;
+
     m_setup_time = util_get_cur_time();
-    
+        
+    MUTEX_SETUP(m_event_lock);
     MUTEX_SETUP(m_ref_lock);
 
 #ifndef _WIN32
@@ -39,6 +43,7 @@ CBaseConnection::CBaseConnection()
 
 CBaseConnection::~CBaseConnection()
 {
+    MUTEX_CLEANUP(m_event_lock);
     MUTEX_CLEANUP(m_ref_lock);
     MUTEX_CLEANUP(m_remote_lock);
     _LOG_DEBUG("destruct base connection");

@@ -29,6 +29,42 @@ public:
     void notify_remote_close();
     void free_client();
     void free_remote();
+
+    void set_client_busy(bool is_busy)
+    {
+        m_is_client_busy = is_busy;
+    }
+    bool is_client_busy()
+    {
+        return m_is_client_busy;
+    }
+
+    void set_remote_busy(bool is_busy)
+    {
+        m_is_remote_busy = is_busy;
+    }
+    bool is_remote_busy()
+    {
+        return m_is_remote_busy;
+    }
+
+    void set_client_pause_read(bool is_pause)
+    {
+        m_is_client_pause_read = is_pause;
+    }
+    bool is_client_pause_read()
+    {
+        return m_is_client_pause_read;
+    }
+
+    void set_remote_pause_read(bool is_pause)
+    {
+        m_is_remote_pause_read = is_pause;
+    }
+    bool is_remote_pause_read()
+    {
+        return m_is_remote_pause_read;
+    }
 public:
     int attach_client(CBaseClient *client);
     int attach_remote(CBaseRemote *remote);
@@ -41,6 +77,8 @@ public:
     virtual void print_statistic(FILE *pFd) = 0;
     void destroy();
 public:
+    MUTEX_TYPE m_event_lock;
+
     MUTEX_TYPE m_remote_lock;
     CBaseClient *m_client;
     CBaseRemote *m_remote;
@@ -52,6 +90,12 @@ public:
 
     uint64_t m_send_client_bytes;
     uint64_t m_send_remote_bytes;
+
+    bool m_is_client_busy;
+    bool m_is_remote_busy;
+    bool m_is_client_pause_read;
+    bool m_is_remote_pause_read;
+
 private:
     MUTEX_TYPE m_ref_lock;
     uint32_t m_refcnt;

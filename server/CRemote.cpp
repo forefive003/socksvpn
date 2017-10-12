@@ -51,6 +51,19 @@ int CRemote::send_data_msg(char *buf, int buf_len)
 
 int CRemote::recv_handle(char *buf, int buf_len)
 {
-    return m_owner_conn->fwd_remote_data_msg(buf, buf_len);
-}
+    if(0 != m_owner_conn->fwd_remote_data_msg(buf, buf_len))
+    {
+        return -1;
+    }
 
+    MUTEX_LOCK(m_owner_conn->m_event_lock);
+    if (m_owner_conn->is_client_busy())
+    {
+        /*unregister read event*/
+        this->pause_read();
+        m_owner_conn->set_remote_pause_read(true);
+    }
+    MUTEX_LOCK(m_owner_conn->m_event_lock);
+
+    return 0;
+}

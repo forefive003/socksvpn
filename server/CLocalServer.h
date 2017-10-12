@@ -22,6 +22,9 @@ public:
 private:
     int pdu_handle(char *pdu_buf, int pdu_len);
 
+    int send_pre_handle();
+    int send_post_handle();
+
     int connect_handle(BOOL result);
     int recv_handle(char *buf, int buf_len);
     void free_handle();
