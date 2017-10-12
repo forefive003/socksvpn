@@ -486,10 +486,14 @@ int CLocalServer::send_post_handle()
         if (connObj->is_remote_pause_read())
         {
             /*register read event*/
-            this->resume_read();
+            MUTEX_LOCK(connObj->m_remote_lock);
+            if (connObj->m_remote != NULL)
+                connObj->m_remote->resume_read();
+            MUTEX_UNLOCK(connObj->m_remote_lock);
+
             connObj->set_remote_pause_read(false);
         }
-        MUTEX_LOCK(connObj->m_event_lock);
+        MUTEX_UNLOCK(connObj->m_event_lock);
     }
     MUTEX_UNLOCK(g_ConnMgr->m_obj_lock);
     return 0;

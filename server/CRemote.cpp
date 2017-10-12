@@ -63,7 +63,7 @@ int CRemote::recv_handle(char *buf, int buf_len)
         this->pause_read();
         m_owner_conn->set_remote_pause_read(true);
     }
-    MUTEX_LOCK(m_owner_conn->m_event_lock);
+    MUTEX_UNLOCK(m_owner_conn->m_event_lock);
 
     return 0;
 }

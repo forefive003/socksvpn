@@ -36,6 +36,7 @@ class CSocksSendQ
 public:
     CSocksSendQ()
     {
+        m_cur_send_node = NULL;
         SQUEUE_INIT_HEAD(&m_data_queue);
     #ifdef _WIN32
         m_queue_lock = 0;
@@ -52,7 +53,11 @@ public:
         pthread_spin_destroy(&m_queue_lock);
     #endif
 
-        this->clean_q();
+        if (this->node_cnt() > 0)
+        {
+            _LOG_WARN("%d uncompleted write node when free sendQ.", this->node_cnt());
+            this->clean_q();
+        }
     }
 
 public:
