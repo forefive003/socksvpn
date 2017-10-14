@@ -441,6 +441,7 @@ void CLocalServer::free_handle()
 
 int CLocalServer::send_pre_handle()
 {
+    #if 0
     /*iterator all connection, and move their send node to self's*/
     CConnection *connObj = NULL;
 
@@ -462,7 +463,8 @@ int CLocalServer::send_pre_handle()
         MUTEX_UNLOCK(connObj->m_remote_lock);        
     }
     MUTEX_UNLOCK(g_ConnMgr->m_obj_lock);
-
+    #endif
+    
     return 0;
 }
 

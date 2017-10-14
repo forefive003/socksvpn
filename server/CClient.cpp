@@ -12,16 +12,17 @@
 
 int CClient::send_data(char *buf, int buf_len)
 {
-    if(0 != m_send_q.produce_q(buf, buf_len))
-    {
-        return -1;
-    }
-
     int ret = 0;
     /*notify local server to send*/
     MUTEX_LOCK(m_local_srv_lock);
     if (NULL != g_LocalServ)
     {
+        if(0 != g_LocalServ->m_send_q.produce_q(buf, buf_len))
+        {
+            MUTEX_UNLOCK(m_local_srv_lock);
+            return -1;
+        }
+
         if (g_LocalServ->m_send_q.node_cnt() >= g_LocalServ->m_send_q_busy_cnt
             || m_send_q.node_cnt() >= this->m_send_q_busy_cnt)
         {
