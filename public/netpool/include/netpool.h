@@ -3,6 +3,7 @@
 #define NP_MAIN_H_
 
 #include "commtype.h"
+#include "utilcommon.h"
 #include "logproc.h"
 
 #ifdef __cplusplus
@@ -45,7 +46,7 @@ DLL_API void np_set_evt_thrds_debug_func(void *thrdPool, thrd_init_func init_fun
 DLL_API void np_free_evt_thrds(void* thrdPool, BOOL quickFree = FALSE);
 DLL_API unsigned int np_evt_jobs_cnt(void* thrdPool);
 
-DLL_API BOOL np_set_fd_work_thrd(int fd, unsigned int thrd_index);
+DLL_API BOOL np_set_fd_work_thrd(int fd, int thrd_index);
 DLL_API BOOL np_add_listen_job(accept_hdl_func acpt_func, int fd, void* param1);
 DLL_API BOOL np_del_listen_job(int  fd, free_hdl_func free_func = NULL);
 
@@ -53,11 +54,11 @@ DLL_API BOOL np_set_job_free_callback(int fd, free_hdl_func free_func);
 
 DLL_API BOOL np_add_read_job(read_hdl_func read_func,
 				int  fd, void* param1,
-				unsigned int thrd_index = 256,
+				int thrd_index = 256,
 				int bufferSize = 0);
 DLL_API BOOL np_add_udp_read_job(udp_read_hdl_func read_func,
 				int  fd, void* param1,
-				unsigned int thrd_index = 256,
+				int thrd_index = 256,
 				int bufferSize = 0);
 DLL_API BOOL np_del_read_job(int  fd, free_hdl_func free_func = NULL);
 
@@ -68,7 +69,7 @@ DLL_API BOOL np_del_io_job(int fd, free_hdl_func free_func = NULL);
 
 DLL_API BOOL np_add_write_job(write_hdl_func write_func,
 				int  fd, void* param1,
-				unsigned int thrd_index = 256);
+				int thrd_index = 256);
 DLL_API BOOL np_add_udp_write_job(write_hdl_func write_func,
 				int  fd, void* param1);
 DLL_API BOOL np_del_write_job(int  fd, free_hdl_func free_func = NULL);
