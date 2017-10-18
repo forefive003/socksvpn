@@ -11,7 +11,7 @@ class CSocksSrv : public CNetRecv
 public:
     CSocksSrv(uint32_t ipaddr, uint16_t port, int fd) : CNetRecv(ipaddr, port, fd)
     {
-        this->set_thrd_index(1);
+        //this->set_thrd_index(1);
         
         memset(m_recv_buf, 0, sizeof(m_recv_buf));
         m_recv_len = 0;

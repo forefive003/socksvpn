@@ -7,7 +7,7 @@ class CLocalServer : public CNetRecv
 public:
     CLocalServer(uint32_t ipaddr, uint16_t port) : CNetRecv(ipaddr, port)
     {
-        this->set_thrd_index(0);
+        //this->set_thrd_index(0);
 
         memset(m_recv_buf, 0, sizeof(m_recv_buf));
         m_recv_len = 0;
