@@ -14,12 +14,10 @@ int CClient::send_data(char *buf, int buf_len)
 {
     int ret = 0;
     /*notify local server to send*/
-    MUTEX_LOCK(m_local_srv_lock);
     if (NULL != g_LocalServ)
     {
         if(0 != g_LocalServ->m_send_q.produce_q(buf, buf_len))
         {
-            MUTEX_UNLOCK(m_local_srv_lock);
             return -1;
         }
 
@@ -35,8 +33,7 @@ int CClient::send_data(char *buf, int buf_len)
     {
         ret = -1;
     }
-    MUTEX_UNLOCK(m_local_srv_lock);
-
+    
     return ret;
 }
 
@@ -60,13 +57,17 @@ int CClient::send_remote_close_msg()
     s2rhdr.sub_type = REMOTE_CLOSED;
     PKT_S2R_HDR_HTON(&s2rhdr);
 
+    MUTEX_LOCK(m_local_srv_lock);
     if((0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
         || (0 != this->send_data((char*)&s2rhdr, sizeof(PKT_S2R_HDR_T))))
     {
+        MUTEX_UNLOCK(m_local_srv_lock);
+
         _LOG_ERROR("client(%s/%u/%s/%u/fd%d) send remote close msg to client failed", m_ipstr, m_port, 
             m_inner_ipstr, m_inner_port, m_fd);
         return -1;
     }
+    MUTEX_UNLOCK(m_local_srv_lock);
 
     _LOG_INFO("client(%s/%u/%s/%u/fd%d) send remote close msg to client", m_ipstr, m_port, 
         m_inner_ipstr, m_inner_port, m_fd);
@@ -102,14 +103,18 @@ int CClient::send_connect_result(BOOL result)
     s2rhdr.sub_type = S2R_CONNECT_RESULT;
     PKT_S2R_HDR_HTON(&s2rhdr);
 
+    MUTEX_LOCK(m_local_srv_lock);
     if((0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
         || (0 != this->send_data((char*)&s2rhdr, sizeof(PKT_S2R_HDR_T)))
         || (0 != this->send_data(resp_buf, sizeof(resp_buf))))
     {
+        MUTEX_UNLOCK(m_local_srv_lock);
+
         _LOG_ERROR("client(%s/%u/%s/%u/fd%d) send connect result to client failed", m_ipstr, m_port, 
         m_inner_ipstr, m_inner_port, m_fd);
         return -1;
     }
+    MUTEX_UNLOCK(m_local_srv_lock);
 
     _LOG_INFO("client(%s/%u/%s/%u/fd%d) send connect result to client", m_ipstr, m_port, 
         m_inner_ipstr, m_inner_port, m_fd);
@@ -135,12 +140,15 @@ int CClient::send_data_msg(char *buf, int buf_len)
     s2rhdr.sub_type = S2R_DATA;
     PKT_S2R_HDR_HTON(&s2rhdr);
 
+    MUTEX_LOCK(m_local_srv_lock);
     if((0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
         || (0 != this->send_data((char*)&s2rhdr, sizeof(PKT_S2R_HDR_T)))
         || (0 != this->send_data(buf, buf_len)))
     {
+        MUTEX_UNLOCK(m_local_srv_lock);
         return -1;
     }
+    MUTEX_UNLOCK(m_local_srv_lock);
 
     return 0;
 }

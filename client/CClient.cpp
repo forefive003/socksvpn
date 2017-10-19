@@ -225,7 +225,7 @@ int CClient::socks_proto5_handle(char *buf, int buf_len)
 	}
 	else
 	{
-		_LOG_ERROR("clost client(%s/%u/%s/%u/fd%d), for remote not authed", m_ipstr, m_port, 
+		_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for remote not authed", m_ipstr, m_port, 
 			m_inner_ipstr, m_inner_port, m_fd);
 		this->auth_result_handle(FALSE);
 	}
@@ -309,7 +309,7 @@ int CClient::socks_proto4_handle(char *buf, int buf_len)
 	}
 	else
 	{
-		_LOG_ERROR("clost client(%s/%u/%s/%u/fd%d), for remote not authed", m_ipstr, m_port, 
+		_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for remote not authed", m_ipstr, m_port, 
 			m_inner_ipstr, m_inner_port, m_fd);
 		this->auth_result_handle(FALSE);
 	}

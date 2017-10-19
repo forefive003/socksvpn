@@ -33,7 +33,7 @@ public:
     virtual ~CNetRecv();
 
 public:
-    void set_thrd_index(unsigned int thrd_index);
+    void set_thrd_index(int thrd_index);
     BOOL is_connected();
     void set_async_write_flag(bool is_async);
 
@@ -83,8 +83,9 @@ public:
     CSocksSendQ m_send_q;
     unsigned int m_send_q_busy_cnt;
 
-private:
-    unsigned int m_thrd_index;
+    int m_thrd_index;
+
+private:    
     bool m_is_async_write;
 
     MUTEX_TYPE m_free_lock; /*send_data and free maybe called in diffrent thread,
