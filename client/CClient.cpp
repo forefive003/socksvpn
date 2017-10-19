@@ -441,7 +441,7 @@ void CClient::auth_result_handle(BOOL result)
 	}
 }
 
-void CClient::connect_result_handle(BOOL result)
+void CClient::connect_result_handle(BOOL result, int remote_ipaddr)
 {
     if (SOCKS_CONNECTING != m_status)
     {
@@ -459,6 +459,8 @@ void CClient::connect_result_handle(BOOL result)
     {
         _LOG_INFO("client(%s/%u/%s/%u/fd%d) connect success, consume %"PRIu64"s", m_ipstr, m_port, 
         	m_inner_ipstr, m_inner_port, m_fd, consume_time);
+
+        m_real_remote_ipaddr = remote_ipaddr;
         this->set_client_status(SOCKS_CONNECTED);
     }
     else

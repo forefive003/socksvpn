@@ -6,8 +6,9 @@
 
 
 uint64_t g_total_data_req_cnt = 0;
+uint64_t g_total_data_req_byte = 0;
 uint64_t g_total_data_resp_cnt = 0;
-
+uint64_t g_total_data_resp_byte = 0;
 
 CBaseConnection::CBaseConnection()
 {
@@ -164,6 +165,7 @@ int CBaseConnection::fwd_client_data_msg(char *buf, int buf_len)
         m_send_client_bytes+=buf_len;
 
         g_total_data_req_cnt++;
+        g_total_data_req_byte += buf_len;
     }
     else
     {
@@ -200,6 +202,7 @@ int CBaseConnection::fwd_remote_data_msg(char *buf, int buf_len)
         m_send_remote_bytes+=buf_len;
 
         g_total_data_resp_cnt++;
+        g_total_data_resp_byte += buf_len;
     }
     else
     {

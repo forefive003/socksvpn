@@ -154,7 +154,7 @@ BOOL CRemoteServer::parse_authen_result_msg(char *buf, int buf_len)
     return result;
 }
 
-BOOL CRemoteServer::parse_connect_result_msg(char *buf, int buf_len)
+BOOL CRemoteServer::parse_connect_result_msg(char *buf, int buf_len, int *remoteIpaddr)
 {
     if (buf[0] != 0x05 || buf[3] != 0x01)
     {
@@ -166,6 +166,9 @@ BOOL CRemoteServer::parse_connect_result_msg(char *buf, int buf_len)
     {
         return FALSE;
     }
+
+    int tmpIpaddr = *((int*)&buf[6]);
+    *remoteIpaddr = ntohl(tmpIpaddr);
 
     return TRUE;
 }
@@ -283,15 +286,16 @@ int CRemoteServer::pdu_handle(char *pdu_buf, int pdu_len)
                 return 0;
             }
 
-            if (FALSE == parse_connect_result_msg(data_buf, data_len))
+            int remoteIpaddr = 0;
+            if (FALSE == parse_connect_result_msg(data_buf, data_len, &remoteIpaddr))
             {
                 /*authen failed*/
-                pConn->client_connect_result_handle(FALSE);
+                pConn->client_connect_result_handle(FALSE, 0);
             }
             else
             {
                 /*authen ok*/
-                pConn->client_connect_result_handle(TRUE);
+                pConn->client_connect_result_handle(TRUE, remoteIpaddr);
             }
         }
         else if (r2chdr->sub_type == R2C_DATA)

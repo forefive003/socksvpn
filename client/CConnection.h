@@ -66,14 +66,14 @@ public:
         return ret;
     }
 
-    void client_connect_result_handle(BOOL result)
+    void client_connect_result_handle(BOOL result, int remote_ipaddr)
     {
         m_client_connect_resp_cnt++;
 
         MUTEX_LOCK(m_remote_lock);
         if (m_client != NULL)
         {
-            CLIENT_CONVERT(m_client)->connect_result_handle(result);
+            CLIENT_CONVERT(m_client)->connect_result_handle(result, remote_ipaddr);
         }
         else
         {

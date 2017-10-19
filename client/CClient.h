@@ -57,7 +57,7 @@ public:
 	int get_client_status();
 	void set_client_status(SOCKS_STATUS_E status); 
 
-	void connect_result_handle(BOOL result);  
+	void connect_result_handle(BOOL result, int remote_ipaddr);  
 
     int send_remote_close_msg()
     {

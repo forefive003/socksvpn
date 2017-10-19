@@ -32,7 +32,7 @@ private:
 private:
     int build_authen_msg(char *buf);
     BOOL parse_authen_result_msg(char *buf, int buf_len);
-    BOOL parse_connect_result_msg(char *buf, int buf_len);
+    BOOL parse_connect_result_msg(char *buf, int buf_len, int *remoteIpaddr);
 
 private:
     char m_recv_buf[2048];

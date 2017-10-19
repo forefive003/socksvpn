@@ -103,6 +103,8 @@ private:
 
 
 extern uint64_t g_total_data_req_cnt;
+extern uint64_t g_total_data_req_byte;
 extern uint64_t g_total_data_resp_cnt;
+extern uint64_t g_total_data_resp_byte;
 
 #endif

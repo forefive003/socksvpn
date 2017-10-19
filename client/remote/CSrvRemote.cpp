@@ -25,7 +25,7 @@ int CSrvRemote::connect_handle(BOOL result)
     if (!result)
     {
         _LOG_WARN("fail to connect to remote %s/%u", m_ipstr, m_port);
-        pConn->client_connect_result_handle(false);
+        pConn->client_connect_result_handle(false, 0);
         /*先发送报文*/
         pConn->notify_remote_close();
         /*在释放client*/
@@ -93,7 +93,8 @@ int CSrvRemote::socks4_handshake_resp_handle(char *buf, int buf_len)
     }
 
     set_remote_status(SOCKS_CONNECTED);
-    pConn->client_connect_result_handle(true);
+	///TODO:
+    pConn->client_connect_result_handle(true, 0);
     return 0;
 }
 
@@ -218,7 +219,8 @@ int CSrvRemote::socks5_connect_resp_handle(char *buf, int buf_len)
     set_remote_status(SOCKS_CONNECTED);
 
     CConnection *pConn = (CConnection*)this->m_owner_conn;
-    pConn->client_connect_result_handle(true);
+	///TODO
+    pConn->client_connect_result_handle(true, 0);
     return 0;
 }
 

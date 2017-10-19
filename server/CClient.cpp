@@ -85,6 +85,12 @@ int CClient::send_connect_result(BOOL result)
         because this action is not standard*/
         resp_buf[1] = 0xFF;
     }
+    else
+    {
+        /*last four bytes to fill remote ipaddr*/
+        CConnection *pConn = (CConnection*)this->m_owner_conn;
+        *((int*)(&resp_buf[6])) = htonl(pConn->m_remote->m_ipaddr);
+    }
 
 	PKT_HDR_T pkthdr;
     PKT_S2R_HDR_T s2rhdr;
