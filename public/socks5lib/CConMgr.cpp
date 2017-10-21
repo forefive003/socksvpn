@@ -70,7 +70,7 @@ int CConnMgr::add_conn(CBaseConnection *pConn)
     m_conn_cnt++;
     MUTEX_UNLOCK(m_obj_lock);
 
-    _LOG_INFO("add connection");
+    _LOG_DEBUG("add connection");
     return 0;
 }
 
@@ -81,7 +81,7 @@ void CConnMgr::del_conn(CBaseConnection *pConn)
     m_conn_cnt--;
     MUTEX_UNLOCK(m_obj_lock);
 
-    _LOG_INFO("del connection");
+    _LOG_DEBUG("del connection");
 }
 
 void CConnMgr::free_all_conn()

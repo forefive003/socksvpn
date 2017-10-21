@@ -302,7 +302,7 @@ void CBaseConnection::detach_client()
     MUTEX_UNLOCK(m_remote_lock);
 
     this->dec_ref();
-    _LOG_INFO("dettach client");
+    _LOG_DEBUG("dettach client");
 }
 
 void CBaseConnection::detach_remote()
@@ -318,7 +318,7 @@ void CBaseConnection::detach_remote()
     MUTEX_UNLOCK(m_remote_lock);
 
     this->dec_ref();
-    _LOG_INFO("dettach remote");
+    _LOG_DEBUG("dettach remote");
 }
 
 int CBaseConnection::attach_client(CBaseClient *client)
@@ -331,7 +331,7 @@ int CBaseConnection::attach_client(CBaseClient *client)
 
     this->inc_ref();
     m_client = client;
-    _LOG_INFO("attach client");
+    _LOG_DEBUG("attach client");
     return 0;
 }
 
@@ -345,7 +345,7 @@ int CBaseConnection::attach_remote(CBaseRemote *remote)
 
     this->inc_ref();
     m_remote = remote;
-    _LOG_INFO("attach remote");
+    _LOG_DEBUG("attach remote");
     return 0;
 }
 
