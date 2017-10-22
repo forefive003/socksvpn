@@ -115,6 +115,8 @@ void proxy_set_servers(int *srv_ip_arr, int srv_cnt)
 {
 	_LOG_INFO("update servers, cnt %d", srv_cnt);
 
+	BOOL isCfgServerOk = false;
+
 	g_servers_cnt = 0;
 	memset(g_servers_ipaddr, 0, sizeof(g_servers_ipaddr));
 	memset(g_servers, 0, sizeof(g_servers));
@@ -123,9 +125,25 @@ void proxy_set_servers(int *srv_ip_arr, int srv_cnt)
 	{
 		g_servers_ipaddr[ii] = srv_ip_arr[ii];
 		engine_ipv4_to_str(htonl(g_servers_ipaddr[ii]), g_servers[ii]);
+
+		if (g_proxy_cfg.server_ip == g_servers_ipaddr[ii])
+		{
+			isCfgServerOk = true;
+		}
 	}
 
 	g_servers_cnt = srv_cnt;
+
+	if (!isCfgServerOk)
+	{
+		MUTEX_LOCK(m_remote_srv_lock);
+		if (g_RemoteServ != NULL && g_RemoteServ->is_authed())
+		{
+			/*server not online already, reset authed*/
+			g_RemoteServ->reset_authed();
+		}
+		MUTEX_UNLOCK(m_remote_srv_lock);
+	}
 
 #ifdef _WIN32
 	/*通知主窗口更新*/

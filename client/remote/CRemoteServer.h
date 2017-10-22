@@ -20,7 +20,8 @@ public:
 public:
     int send_auth_quest_msg();
     BOOL is_authed();
-
+    void reset_authed();
+    
 private:
     int pdu_handle(char *pdu_buf, int pdu_len);
 

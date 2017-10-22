@@ -40,6 +40,17 @@ BOOL is_remote_connected()
     return FALSE;
 }
 
+BOOL CRemoteServer::is_authed()
+{
+    return m_is_authed;
+}
+
+void CRemoteServer::reset_authed()
+{
+    m_is_authed = false;
+    _LOG_WARN("reset authed status");
+}
+
 void CRemoteServer::free_handle()
 {
     ///TODO:
@@ -214,11 +225,6 @@ int CRemoteServer::send_auth_quest_msg()
     return 0;
 }
 
-
-BOOL CRemoteServer::is_authed()
-{
-	return m_is_authed;
-}
 int CRemoteServer::auth_result_msg_handle(BOOL result)
 {
 	if (result)
