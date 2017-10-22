@@ -221,7 +221,7 @@ int CRemoteServer::send_auth_quest_msg()
         return -1;
     }
 
-    _LOG_INFO("send auth request msg to remote");
+    _LOG_INFO("send local keepalive msg to relay server");
     return 0;
 }
 
@@ -229,13 +229,19 @@ int CRemoteServer::auth_result_msg_handle(BOOL result)
 {
 	if (result)
 	{
-        _LOG_INFO("auth success");
-		m_is_authed = TRUE;
+        if (!m_is_authed)
+        {
+            _LOG_INFO("auth success");
+    		m_is_authed = TRUE;
+        }
 	}
 	else
 	{
-        _LOG_INFO("auth failed");
-		m_is_authed = FALSE;
+        if (m_is_authed)
+        {
+            _LOG_INFO("auth failed");
+    		m_is_authed = FALSE;
+        }
 	}
     return 0;
 }
