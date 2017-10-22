@@ -72,6 +72,9 @@ int CRemote::send_client_connect_msg(char *buf, int buf_len)
     {
         g_SocksSrvMgr->unlock();
         _LOG_ERROR("fail to find socksserver by 0x%x, username %s when send client connect msg", m_ipaddr, m_username);
+        
+        /*notify client that remote already closed*/
+        this->notify_remote_close();
         return -1;
     }
 
@@ -129,6 +132,9 @@ int CRemote::send_data_msg(char *buf, int buf_len)
     {
         g_SocksSrvMgr->unlock();
         _LOG_ERROR("fail to find socksserver by 0x%x, username %s", m_ipaddr, m_username);
+
+        /*notify client that remote already closed*/
+        this->notify_remote_close();
         return -1;
     }
 
