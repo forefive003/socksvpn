@@ -113,7 +113,10 @@ int proxy_cfg_get_encry_type(const char* desc)
 
 void proxy_set_servers(int *srv_ip_arr, int srv_cnt)
 {
-	_LOG_INFO("update servers, cnt %d", srv_cnt);
+	if (g_servers_cnt != srv_cnt)
+	{
+		_LOG_INFO("update servers, cnt %d", srv_cnt);
+	}
 
 	BOOL isCfgServerOk = false;
 
