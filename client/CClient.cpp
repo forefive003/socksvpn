@@ -10,6 +10,7 @@
 #include "CVpnRemote.h"
 #include "CSocksMem.h"
 #include "CRemoteServer.h"
+#include "CSyslogMgr.h"
 
 int CClient::register_req_handle(char *buf, int buf_len)
 {
@@ -462,12 +463,21 @@ void CClient::connect_result_handle(BOOL result, int remote_ipaddr)
 
         m_real_remote_ipaddr = remote_ipaddr;
         this->set_client_status(SOCKS_CONNECTED);
+
+        if (consume_time >= 5)
+        {
+			g_syslogMgr->add_syslog("client(%s/%u/%s/%u/fd%d) connect success, consume %"PRIu64"s", m_ipstr, m_port, 
+    						m_inner_ipstr, m_inner_port, m_fd, consume_time);
+        }
     }
     else
     {
         _LOG_WARN("client(%s/%u/%s/%u/fd%d) connect failed, consume %"PRIu64"s", m_ipstr, m_port, 
         	m_inner_ipstr, m_inner_port, m_fd, consume_time);
         this->set_client_status(SOCKS_CONNECTED_FAILED);
+
+		g_syslogMgr->add_syslog("client(%s/%u/%s/%u/fd%d) connect failed, consume %"PRIu64"s", m_ipstr, m_port, 
+    				m_inner_ipstr, m_inner_port, m_fd, consume_time);
     }
 }
 

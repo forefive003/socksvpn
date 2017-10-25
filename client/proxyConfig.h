@@ -78,6 +78,8 @@ int proxy_cfg_init();
 int proxy_cfg_save();
 
 int proxy_set_status(bool is_start);
+int proxy_set_loglevel(int loglevel);
+int proxy_set_thrdcnt(int thrdcnt);
 
 extern int g_proxy_procs_cnt;
 extern char g_proxy_procs[PROXY_CFG_MAX_PROC][64];
@@ -95,3 +97,5 @@ extern const char* g_socks_status_desc[];
 
 extern bool g_is_start;
 
+extern int g_log_level;
+extern int g_thrd_cnt;

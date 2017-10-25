@@ -1,4 +1,5 @@
 ﻿#include "commtype.h"
+#include "utilcommon.h"
 #include "logproc.h"
 #include "engine_ip.h"
 #include "common_def.h"
@@ -36,6 +37,9 @@ char g_servers[PROXY_MAX_SERVER][IP_DESC_LEN];
 
 /*当前状态*/
 bool g_is_start = false;
+
+int g_log_level = -1;
+int g_thrd_cnt = 0;
 
 const char* g_socks_status_desc[] =
 {
@@ -386,6 +390,25 @@ int proxy_cfg_save()
 	/*status*/
 	SNPRINTF(strTemp, sizeof(strTemp) - 1, "%d", g_is_start);
 	WritePrivateProfileString(_T("Status"), _T("IsProxyStart"), strTemp, _T(g_proxy_cfg_dir));
+
+	/*other*/
+	SNPRINTF(strTemp, sizeof(strTemp) - 1, "%d", g_thrd_cnt);
+	WritePrivateProfileString(_T("Other"), _T("ThreadCnt"), strTemp, _T(g_proxy_cfg_dir));
+
+	char logLevelStr[16] = {0};
+	if (g_log_level == L_DEBUG)
+	{
+		SNPRINTF(logLevelStr, 16, "DEBUG");
+	}
+	else if (g_log_level == L_INFO)
+	{
+		SNPRINTF(logLevelStr, 16, "INFO");
+	}
+	else 
+	{
+		SNPRINTF(logLevelStr, 16, "ERROR");
+	}
+	WritePrivateProfileString(_T("Other"), _T("LogLevel"), _T(logLevelStr), _T(g_proxy_cfg_dir));
 #endif
 	return 0;
 }
@@ -530,8 +553,56 @@ int proxy_cfg_init()
 	{
 		g_is_start = false;
 	}
+
+	char logLevelStr[16] = {0};
+	::GetPrivateProfileString(_T("Other"), _T("LogLevel"), _T("DEBUG"), logLevelStr,
+							sizeof(logLevelStr), _T(g_proxy_cfg_dir));
+	if (strncmp(logLevelStr, "DEBUG", strlen("DEBUG")) == 0)
+	{
+		g_log_level = L_DEBUG;
+	}
+	else if (strncmp(logLevelStr, "INFO", strlen("INFO")) == 0)
+	{
+		g_log_level = L_INFO;
+	}
+	else 
+	{
+		g_log_level = L_ERROR;
+	}
+
+	g_thrd_cnt = ::GetPrivateProfileInt(_T("Other"), _T("ThreadCnt"), 0, _T(g_proxy_cfg_dir));
 #endif
+
+	if (-1 == g_log_level)
+	{
+		g_log_level = L_INFO;
+	}
+
+	if (g_thrd_cnt == 0)
+	{
+		int cpu_num = util_get_cpu_core_num();
+		g_thrd_cnt = cpu_num * 2;	
+	}
+	
     return 0;
+}
+
+int proxy_set_loglevel(int loglevel)
+{
+	g_log_level = loglevel;
+	_LOG_INFO("set log level to %d", g_log_level);
+
+	proxy_cfg_save();
+	return 0;
+}
+
+int proxy_set_thrdcnt(int thrdcnt)
+{
+	g_thrd_cnt = thrdcnt;
+	_LOG_INFO("set thread count to %d", thrdcnt);
+
+	proxy_cfg_save();
+	return 0;
 }
 
 int proxy_set_status(bool is_start)

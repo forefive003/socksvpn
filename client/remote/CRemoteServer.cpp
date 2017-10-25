@@ -12,9 +12,20 @@
 #include "CConMgr.h"
 #include "CRemoteServer.h"
 #include "relay_pkt_def.h"
+#include "CSyslogMgr.h"
 
 MUTEX_TYPE m_remote_srv_lock;
 CRemoteServer *g_RemoteServ = NULL;
+
+uint64_t g_alive_cnt = 0;
+uint64_t g_req_cnt = 0;
+uint64_t g_reply_cnt = 0;
+
+double g_total_data_req_pps = 0;
+double g_total_data_req_bps = 0;
+
+double g_total_data_resp_pps = 0;
+double g_total_data_resp_bps = 0;
 
 BOOL is_remote_authed()
 {
@@ -61,12 +72,15 @@ void CRemoteServer::free_handle()
     delete g_RemoteServ;
     g_RemoteServ = NULL;
     MUTEX_UNLOCK(m_remote_srv_lock);
+
+    g_syslogMgr->add_syslog("relay server disconnected and free");
 }
 
 int CRemoteServer::connect_handle(BOOL result)
 {
 	if (!result)
 	{
+        g_syslogMgr->add_syslog("connect relay server %s/%d failed", m_ipstr, m_port);
 		return 0;
 	}
 
@@ -80,6 +94,9 @@ int CRemoteServer::connect_handle(BOOL result)
         setsockopt(m_fd, SOL_TCP, TCP_KEEPINTVL, (void *)&keepinterval , sizeof(keepinterval ));
         setsockopt(m_fd, SOL_TCP, TCP_KEEPCNT, (void *)&keepcount , sizeof(keepcount ));
 #endif
+
+    g_syslogMgr->add_syslog("connect relay server %s/%d success", m_ipstr, m_port);
+
 	if(0 != this->register_read())
 	{
         return -1;
@@ -161,7 +178,6 @@ BOOL CRemoteServer::parse_authen_result_msg(char *buf, int buf_len)
     }
 
     proxy_set_servers(srv_ip_array, srv_cnt);
-    
     return result;
 }
 
@@ -233,7 +249,10 @@ int CRemoteServer::auth_result_msg_handle(BOOL result)
         {
             _LOG_INFO("auth success");
     		m_is_authed = TRUE;
+            g_syslogMgr->add_syslog("register to relay server %s/%d success", m_ipstr, m_port);
         }
+
+        g_alive_cnt++;
 	}
 	else
 	{
@@ -241,6 +260,7 @@ int CRemoteServer::auth_result_msg_handle(BOOL result)
         {
             _LOG_INFO("auth failed");
     		m_is_authed = FALSE;
+            g_syslogMgr->add_syslog("register to relay server %s/%d failed", m_ipstr, m_port);
         }
 	}
     return 0;
@@ -297,6 +317,8 @@ int CRemoteServer::pdu_handle(char *pdu_buf, int pdu_len)
                 pConn->dec_ref();
                 return 0;
             }
+
+            g_reply_cnt++;
 
             int remoteIpaddr = 0;
             if (FALSE == parse_connect_result_msg(data_buf, data_len, &remoteIpaddr))

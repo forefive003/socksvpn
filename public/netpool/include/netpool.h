@@ -32,6 +32,8 @@ typedef int (*thrd_init_func)();
 typedef void (*thrd_exit_func)();
 typedef void (*thrd_beat_func)();
 
+DLL_API int np_get_thrd_fdcnt(int thrd_index);
+DLL_API UTIL_TID np_get_thrd_tid(int thrd_index);
 
 DLL_API BOOL np_init_worker_thrds(unsigned int max_thrd_cnt,
 					unsigned int start_core = 0,

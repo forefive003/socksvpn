@@ -4,3 +4,4 @@
 
 int proxy_init();
 void proxy_free();
+int proxy_reset();

@@ -6,6 +6,7 @@
 #include "CBaseConn.h"
 #include "CClient.h"
 #include "CVpnRemote.h"
+#include "CRemoteServer.h"
 
 class CConnection : public CBaseConnection
 {
@@ -32,6 +33,7 @@ public:
         }
         MUTEX_UNLOCK(m_remote_lock);
         
+        g_req_cnt++;
         return ret;
     }
     

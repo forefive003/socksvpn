@@ -199,6 +199,7 @@
     <ClInclude Include="..\..\..\public\socks5lib\CBaseConn.h" />
     <ClInclude Include="..\..\..\public\socks5lib\CBaseObj.h" />
     <ClInclude Include="..\..\..\public\socks5lib\CConMgr.h" />
+    <ClInclude Include="..\..\..\public\socks5lib\CSyslogMgr.h" />
     <ClInclude Include="..\..\..\public\socks5lib\relay_pkt_def.h" />
     <ClInclude Include="..\..\CClient.h" />
     <ClInclude Include="..\..\CConnection.h" />
@@ -207,6 +208,7 @@
     <ClInclude Include="..\..\remote\CRemoteServer.h" />
     <ClInclude Include="..\..\remote\CSrvRemote.h" />
     <ClInclude Include="..\..\remote\CVpnRemote.h" />
+    <ClInclude Include="DebugDlg.h" />
     <ClInclude Include="GoProxy.h" />
     <ClInclude Include="GoProxyDlg.h" />
     <ClInclude Include="GoProxyProcDlg.h" />
@@ -225,6 +227,8 @@
     <ClInclude Include="lib\xutil\squeue.h" />
     <ClInclude Include="lib\xutil\utilfile.h" />
     <ClInclude Include="lib\xutil\utilstr.h" />
+    <ClInclude Include="OtherSetDlg.h" />
+    <ClInclude Include="ThrdDlg.h" />
     <ClInclude Include="tookkit\XPProgDlg.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="inject\CMemPtr.h" />
@@ -248,18 +252,22 @@
     <ClCompile Include="..\..\..\public\socks5lib\CBaseConn.cpp" />
     <ClCompile Include="..\..\..\public\socks5lib\CBaseObj.cpp" />
     <ClCompile Include="..\..\..\public\socks5lib\CConMgr.cpp" />
+    <ClCompile Include="..\..\..\public\socks5lib\CSyslogMgr.cpp" />
     <ClCompile Include="..\..\CClient.cpp" />
     <ClCompile Include="..\..\CLocalServer.cpp" />
     <ClCompile Include="..\..\proxyConfig.cpp" />
     <ClCompile Include="..\..\remote\CRemoteServer.cpp" />
     <ClCompile Include="..\..\remote\CSrvRemote.cpp" />
     <ClCompile Include="..\..\remote\CVpnRemote.cpp" />
+    <ClCompile Include="DebugDlg.cpp" />
     <ClCompile Include="GoProxy.cpp" />
     <ClCompile Include="GoProxyDlg.cpp" />
     <ClCompile Include="GoProxyProcDlg.cpp" />
     <ClCompile Include="inject\inject.cpp" />
     <ClCompile Include="inject\injectDll32.cpp" />
     <ClCompile Include="inject\injectDll64.cpp" />
+    <ClCompile Include="OtherSetDlg.cpp" />
+    <ClCompile Include="ThrdDlg.cpp" />
     <ClCompile Include="tookkit\XPProgDlg.cpp" />
     <ClCompile Include="src\procCommServ.cpp" />
     <ClCompile Include="src\procMgr.cpp" />
