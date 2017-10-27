@@ -59,7 +59,8 @@ BOOL COtherSetDlg::OnInitDialog()
 	
 	m_cmb_loglevel.InsertString(0, "DEBUG");
 	m_cmb_loglevel.InsertString(1, "INFO");
-	m_cmb_loglevel.InsertString(2, "ERROR");
+	m_cmb_loglevel.InsertString(2, "WARNING");
+	m_cmb_loglevel.InsertString(3, "ERROR");
 
 	if (g_log_level == L_DEBUG)
 	{
@@ -69,9 +70,13 @@ BOOL COtherSetDlg::OnInitDialog()
 	{
 		m_cmb_loglevel.SetCurSel(1);
 	}
-	else
+	else if (g_log_level == L_WARN)
 	{
 		m_cmb_loglevel.SetCurSel(2);
+	}
+	else
+	{
+		m_cmb_loglevel.SetCurSel(3);
 	}
 
 	CString strTemp;
@@ -99,6 +104,10 @@ void COtherSetDlg::OnBnClickedOk()
 	else if (loglevel == 1)
 	{
 		loglevel = L_INFO;
+	}
+	else if (loglevel == 2)
+	{
+		loglevel = L_WARN;
 	}
 	else
 	{

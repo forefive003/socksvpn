@@ -404,6 +404,10 @@ int proxy_cfg_save()
 	{
 		SNPRINTF(logLevelStr, 16, "INFO");
 	}
+	else if (g_log_level == L_WARN)
+	{
+		SNPRINTF(logLevelStr, 16, "WARNING");
+	}
 	else 
 	{
 		SNPRINTF(logLevelStr, 16, "ERROR");
@@ -564,6 +568,10 @@ int proxy_cfg_init()
 	else if (strncmp(logLevelStr, "INFO", strlen("INFO")) == 0)
 	{
 		g_log_level = L_INFO;
+	}
+	else if (strncmp(logLevelStr, "WARNING", strlen("WARNING")) == 0)
+	{
+		g_log_level = L_WARN;
 	}
 	else 
 	{
