@@ -20,6 +20,7 @@ public:
     CSocksSrv* get_socks_server_by_innnerip(uint32_t pub_ipaddr, uint32_t inner_ipaddr);
     CSocksSrv* get_socks_server_by_innnerip(const char* pub_ipstr, const char* inner_ipstr);
     CSocksSrv* get_socks_server_by_user(uint32_t pub_ipaddr, char *username);
+    void aged_socks_server();
 
     void lock();
     void unlock();

@@ -16,7 +16,7 @@ public:
         memset(m_recv_buf, 0, sizeof(m_recv_buf));
         m_recv_len = 0;
 
-        m_update_time = 0;
+        m_update_time = util_get_cur_time();
         m_inner_ipaddr = 0;
 
         m_client_cnt = 0;
@@ -67,11 +67,11 @@ private:
     char m_recv_buf[2048];
     int m_recv_len;
 private:
-	uint64_t m_update_time;
-
     CServerCfg m_srvCfg;
 
 public:
+    uint64_t m_update_time;
+
     uint32_t m_client_cnt;
     uint64_t m_send_client_close_cnt;
     uint64_t m_send_client_connect_cnt;

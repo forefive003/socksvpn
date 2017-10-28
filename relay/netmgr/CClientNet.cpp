@@ -188,6 +188,10 @@ int CClientNet::msg_auth_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_
         return -1;
     }
 
+    m_recv_alive_cnt++;
+    /*update time*/
+    m_update_time = util_get_cur_time();
+
     /*copy username*/
     char *usr_pos = &data_buf[1];
     if (data_len < (1 + 1 + usr_pos[0]))
@@ -503,12 +507,28 @@ void CClientNet::set_user_passwd(char *username, char *passwd)
 
 void CClientNet::print_statistic(FILE *pFd)
 {
-    fprintf(pFd, "client-%s:%u inner %s:%u\n", m_ipstr, m_port,
-        m_inner_ipstr, m_inner_port);
+    char dateformat[64] = {'\0'};
+    struct tm uptimeTm;
+    #ifdef _WIN32
+    localtime_s(&uptimeTm, (time_t*)&this->m_update_time);
+    #else
+    localtime_r((time_t*)&this->m_update_time, &uptimeTm);
+    #endif
+
+    sprintf(dateformat, "%04d-%02d-%02d %02d:%02d:%02d", 
+        uptimeTm.tm_year + 1900, 
+        uptimeTm.tm_mon + 1, 
+        uptimeTm.tm_mday, 
+        uptimeTm.tm_hour, 
+        uptimeTm.tm_min, 
+        uptimeTm.tm_sec);
+
+    fprintf(pFd, "client-%s:%u inner %s:%u, update-time %s\n", m_ipstr, m_port,
+        m_inner_ipstr, m_inner_port, dateformat);
     fprintf(pFd, "\tsend: remote-close:%"PRIu64"\t connect-resp:%"PRIu64"\t data:%"PRIu64"\n", 
         m_send_remote_close_cnt, m_send_connect_result_cnt, m_send_data_cnt);
-    fprintf(pFd, "\trecv: client-close:%"PRIu64"\t connect-req:%"PRIu64"\t data:%"PRIu64"\n", 
-        m_recv_client_close_cnt, m_recv_connect_request_cnt, m_recv_data_cnt);
+    fprintf(pFd, "\trecv: client-close:%"PRIu64"\t connect-req:%"PRIu64"\t data:%"PRIu64"\t alive:%"PRIu64"\n", 
+        m_recv_client_close_cnt, m_recv_connect_request_cnt, m_recv_data_cnt, m_recv_alive_cnt);
 
 #if 0
     m_send_remote_close_cnt = 0;

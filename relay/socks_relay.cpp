@@ -241,6 +241,9 @@ static int register_signal(void)
 static void _timer_callback(void* param1, void* param2,
                 void* param3, void* param4)
 {
+    g_SocksSrvMgr->aged_socks_server();
+    g_ClientNetMgr->aged_client_server();
+
     print_statistic();
 }
 

@@ -35,6 +35,7 @@ public:
 public:
     void set_thrd_index(int thrd_index);
     BOOL is_connected();
+    BOOL is_freeing();
     void set_async_write_flag(bool is_async);
 
     virtual int init();

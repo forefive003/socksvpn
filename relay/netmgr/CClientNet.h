@@ -20,6 +20,7 @@ public:
         memset(m_username, 0, sizeof(m_username));
         memset(m_passwd, 0, sizeof(m_passwd));
 
+        m_update_time = util_get_cur_time();
 
         m_send_remote_close_cnt = 0;
         m_send_connect_result_cnt = 0;
@@ -28,6 +29,7 @@ public:
         m_recv_connect_request_cnt = 0;
         m_recv_data_cnt = 0;
 
+        m_recv_alive_cnt = 0;
         _LOG_INFO("construct clientserver, %s:%u, fd %d", m_ipstr, m_port, m_fd);
     }
     virtual ~CClientNet()
@@ -65,9 +67,14 @@ private:
     char m_inner_ipstr[HOST_IP_LEN + 1];
     
 public:
+    uint64_t m_update_time;
+
     uint64_t m_send_remote_close_cnt;
     uint64_t m_send_connect_result_cnt;
     uint64_t m_send_data_cnt;
+
+    uint64_t m_recv_alive_cnt;
+
     uint64_t m_recv_client_close_cnt;
     uint64_t m_recv_connect_request_cnt;
     uint64_t m_recv_data_cnt;

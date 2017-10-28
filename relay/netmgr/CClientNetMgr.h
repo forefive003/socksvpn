@@ -19,6 +19,8 @@ public:
     void del_client_server(CClientNet *rsocks);
     CClientNet* get_client_server(uint32_t pub_ipaddr, uint16_t pub_port);
 
+    void aged_client_server();
+
     void lock();
     void unlock();
     void print_statistic(FILE *pFd);

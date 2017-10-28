@@ -149,5 +149,5 @@ void COtherSetDlg::OnBnClickedOk()
 		MessageBox("修改成功!", "提示", MB_OK);
 	}
 
-	//CDialogEx::OnOK();
+	CDialogEx::OnOK();
 }

@@ -371,8 +371,24 @@ void CSocksSrv::set_inner_info(uint32_t inner_ipaddr, uint16_t inner_port)
 
 void CSocksSrv::print_statistic(FILE *pFd)
 {
-    fprintf(pFd, "server-%s:%u inner %s:%u\n", m_ipstr, m_port,
-        m_inner_ipstr, m_inner_port);
+    char dateformat[64] = {'\0'};
+    struct tm uptimeTm;
+    #ifdef _WIN32
+    localtime_s(&uptimeTm, (time_t*)&this->m_update_time);
+    #else
+    localtime_r((time_t*)&this->m_update_time, &uptimeTm);
+    #endif
+
+    sprintf(dateformat, "%04d-%02d-%02d %02d:%02d:%02d", 
+        uptimeTm.tm_year + 1900, 
+        uptimeTm.tm_mon + 1, 
+        uptimeTm.tm_mday, 
+        uptimeTm.tm_hour, 
+        uptimeTm.tm_min, 
+        uptimeTm.tm_sec);
+
+    fprintf(pFd, "server-%s:%u inner %s:%u update-time %s\n", m_ipstr, m_port,
+        m_inner_ipstr, m_inner_port, dateformat);
 
     fprintf(pFd, "\tsn:%s, acct cnt %d\n", m_srvCfg.m_sn, m_srvCfg.m_acct_cnt);
     for(int ii = 0; ii < m_srvCfg.m_acct_cnt; ii++)

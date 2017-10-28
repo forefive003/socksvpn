@@ -161,6 +161,34 @@ int CSocksSrvMgr::get_srv_ip_array(int *serv_array)
     return cnt;   
 }
 
+void CSocksSrvMgr::aged_socks_server()
+{
+    RSOCKS_LIST_Itr itr;
+    CSocksSrv *pSocksSrv = NULL;
+    
+    uint64_t cur_time = util_get_cur_time();
+
+    MUTEX_LOCK(m_obj_lock);
+    for (itr = m_rsocks_objs.begin();
+            itr != m_rsocks_objs.end();
+            )
+    {
+        pSocksSrv = *itr;
+        itr++;
+        
+        if (pSocksSrv->m_update_time < cur_time
+            && (cur_time - pSocksSrv->m_update_time >= 30))
+        {
+            _LOG_ERROR("socks server %s:%u, fd %d aged", 
+                pSocksSrv->m_ipstr, pSocksSrv->m_port, pSocksSrv->m_fd);
+            
+            pSocksSrv->free();
+        }
+    }
+    MUTEX_UNLOCK(m_obj_lock);    
+    return;
+}
+
 #if 0
 /*
 [

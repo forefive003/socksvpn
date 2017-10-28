@@ -103,3 +103,32 @@ void CClientNetMgr::print_statistic(FILE *pFd)
 
     return;   
 }
+
+
+void CClientNetMgr::aged_client_server()
+{
+    CLINTNET_LIST_Itr itr;
+    CClientNet *clientNet = NULL;
+    
+    uint64_t cur_time = util_get_cur_time();
+
+    MUTEX_LOCK(m_obj_lock);
+    for (itr = m_client_objs.begin();
+            itr != m_client_objs.end();
+            )
+    {
+        clientNet = *itr;
+        itr++;
+        
+        if (clientNet->m_update_time < cur_time
+            && (cur_time - clientNet->m_update_time >= 30))
+        {
+            _LOG_ERROR("client server %s:%u, fd %d aged", 
+                clientNet->m_ipstr, clientNet->m_port, clientNet->m_fd);
+            
+            clientNet->free();
+        }
+    }
+    MUTEX_UNLOCK(m_obj_lock);    
+    return;
+}

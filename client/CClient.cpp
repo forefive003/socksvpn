@@ -585,6 +585,12 @@ void CClient::get_real_domain(char *domain_name)
 
 void CClient::free()
 {
+	if (this->is_freeing())
+	{
+		/*is freeing, return to avoid relog*/
+		return;
+	}
+
 	int status = this->get_client_status();
 
 	if (status != SOCKS_CONNECTED && status != SOCKS_CONNECTED_FAILED)
