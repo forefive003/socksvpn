@@ -54,7 +54,10 @@ public:
 private:
 	void init_config_display();
 	void init_servers_display();
-	
+private:
+	HBRUSH   m_brEdit;
+	CFont	 m_cfontEdit;
+
 public:
 	CStatusBarCtrl  m_StatusBar;
 	CStatusBarCtrl  m_StatusBar1;
@@ -96,4 +99,7 @@ public:
 	CEdit m_edt_sendrate;
 	CEdit m_edt_recvrate;
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnUpdateMenuStart(CCmdUI *pCmdUI);
+	afx_msg void OnUpdateMenuStop(CCmdUI *pCmdUI);
+	afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
 };
