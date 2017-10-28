@@ -40,6 +40,9 @@ private:
     int m_recv_len;
 
     BOOL m_is_authed;
+
+public:
+    
 };
 
 extern MUTEX_TYPE m_remote_srv_lock;
@@ -47,7 +50,7 @@ extern CRemoteServer *g_RemoteServ;
 extern BOOL is_remote_authed();
 extern BOOL is_remote_connected();
 
-
+extern uint64_t g_latest_alive_time;
 extern uint64_t g_alive_cnt;
 extern uint64_t g_req_cnt;
 extern uint64_t g_reply_cnt;

@@ -466,8 +466,8 @@ void CClient::connect_result_handle(BOOL result, int remote_ipaddr)
 
         if (consume_time >= 5)
         {
-			g_syslogMgr->add_syslog("client(%s/%u/%s/%u/fd%d) connect success, consume %"PRIu64"s", m_ipstr, m_port, 
-    						m_inner_ipstr, m_inner_port, m_fd, consume_time);
+			g_syslogMgr->add_syslog(L_WARN, "client(%s/%u/fd%d) connect success, consume %"PRIu64"s", m_ipstr, m_port, 
+    						m_fd, consume_time);
         }
     }
     else
@@ -476,8 +476,8 @@ void CClient::connect_result_handle(BOOL result, int remote_ipaddr)
         	m_inner_ipstr, m_inner_port, m_fd, consume_time);
         this->set_client_status(SOCKS_CONNECTED_FAILED);
 
-		g_syslogMgr->add_syslog("client(%s/%u/%s/%u/fd%d) connect failed, consume %"PRIu64"s", m_ipstr, m_port, 
-    				m_inner_ipstr, m_inner_port, m_fd, consume_time);
+		g_syslogMgr->add_syslog(L_WARN, "client(%s/%u/fd%d) connect failed, consume %"PRIu64"s", m_ipstr, m_port, 
+    				m_fd, consume_time);
     }
 }
 
@@ -581,4 +581,18 @@ void CClient::get_real_domain(char *domain_name)
 {
 	memset(domain_name, 0, HOST_DOMAIN_LEN + 1);
 	strncpy(domain_name, m_remote_domain, HOST_DOMAIN_LEN);
+}
+
+void CClient::free()
+{
+	int status = this->get_client_status();
+
+	if (status != SOCKS_CONNECTED && status != SOCKS_CONNECTED_FAILED)
+	{
+		g_syslogMgr->add_syslog(L_WARN, "client(%s/%u/fd%d) closed when in %s", m_ipstr, m_port, 
+    				m_fd, g_socks_status_desc[status]);
+	}
+
+	/*call free of parent*/
+	CBaseClient::free();
 }

@@ -6,10 +6,12 @@
 
 #define LOG_MSG_MAX_CNT   100
 #define LOG_MSG_MAX_LEN   1024
+#define LOG_MSG_AGE_TIME  1200
 
 typedef struct
 {
     uint64_t nodetime;
+    int level;
     char data[LOG_MSG_MAX_LEN];
 }LOG_MSG_T;
 
@@ -27,8 +29,8 @@ public:
     int init();
     void free();
 
-    int add_syslog(const char *format, ...);
-    int add_syslog(char *logdata);
+    int add_syslog(int level, const char *format, ...);
+    int add_syslog(int level, char *logdata);
 
     void aged_syslog();
 

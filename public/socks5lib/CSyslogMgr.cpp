@@ -15,7 +15,7 @@ CSyslogMgr::~CSyslogMgr()
     MUTEX_CLEANUP(m_obj_lock);
 }
 
-int CSyslogMgr::add_syslog(const char *format, ...)
+int CSyslogMgr::add_syslog(int level, const char *format, ...)
 {
     LOG_MSG_T *logNode = NULL;
 
@@ -33,6 +33,7 @@ int CSyslogMgr::add_syslog(const char *format, ...)
     memset(logNode, 0, sizeof(logNode));
 
     logNode->nodetime = util_get_cur_time();
+    logNode->level = level;
 
     va_list argp;
     va_start(argp, format);
@@ -45,7 +46,7 @@ int CSyslogMgr::add_syslog(const char *format, ...)
     return 0;
 }
 
-int CSyslogMgr::add_syslog(char *logdata)
+int CSyslogMgr::add_syslog(int level, char *logdata)
 {
     LOG_MSG_T *logNode = NULL;
 
@@ -63,6 +64,8 @@ int CSyslogMgr::add_syslog(char *logdata)
     memset(logNode, 0, sizeof(logNode));
 
     logNode->nodetime = util_get_cur_time();
+    logNode->level = level;
+    
     strncpy(logNode->data, logdata, LOG_MSG_MAX_LEN);
 
     MUTEX_LOCK(m_obj_lock);
@@ -74,7 +77,7 @@ int CSyslogMgr::add_syslog(char *logdata)
 void CSyslogMgr::aged_syslog()
 {
     uint64_t agedtime = util_get_cur_time();
-    agedtime -= 600;
+    agedtime -= LOG_MSG_AGE_TIME;
 
 	LogMsgListRItr itr;
     LOG_MSG_T *logNode = NULL;

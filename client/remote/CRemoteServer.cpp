@@ -17,6 +17,7 @@
 MUTEX_TYPE m_remote_srv_lock;
 CRemoteServer *g_RemoteServ = NULL;
 
+uint64_t g_latest_alive_time = 0;
 uint64_t g_alive_cnt = 0;
 uint64_t g_req_cnt = 0;
 uint64_t g_reply_cnt = 0;
@@ -73,14 +74,14 @@ void CRemoteServer::free_handle()
     g_RemoteServ = NULL;
     MUTEX_UNLOCK(m_remote_srv_lock);
 
-    g_syslogMgr->add_syslog("relay server disconnected and free");
+    g_syslogMgr->add_syslog(L_INFO, "relay server disconnected and free");
 }
 
 int CRemoteServer::connect_handle(BOOL result)
 {
 	if (!result)
 	{
-        g_syslogMgr->add_syslog("connect relay server %s/%d failed", m_ipstr, m_port);
+        g_syslogMgr->add_syslog(L_WARN, "connect relay server %s/%d failed", m_ipstr, m_port);
 		return 0;
 	}
 
@@ -95,7 +96,7 @@ int CRemoteServer::connect_handle(BOOL result)
         setsockopt(m_fd, SOL_TCP, TCP_KEEPCNT, (void *)&keepcount , sizeof(keepcount ));
 #endif
 
-    g_syslogMgr->add_syslog("connect relay server %s/%d success", m_ipstr, m_port);
+    g_syslogMgr->add_syslog(L_INFO, "connect relay server %s/%d success", m_ipstr, m_port);
 
 	if(0 != this->register_read())
 	{
@@ -237,7 +238,7 @@ int CRemoteServer::send_auth_quest_msg()
         return -1;
     }
 
-    _LOG_INFO("send local keepalive msg to relay server");
+    _LOG_DEBUG("send local keepalive msg to relay server");
     return 0;
 }
 
@@ -245,14 +246,15 @@ int CRemoteServer::auth_result_msg_handle(BOOL result)
 {
 	if (result)
 	{
+        g_alive_cnt++;
+        g_latest_alive_time = util_get_cur_time();
+
         if (!m_is_authed)
         {
             _LOG_INFO("auth success");
     		m_is_authed = TRUE;
-            g_syslogMgr->add_syslog("register to relay server %s/%d success", m_ipstr, m_port);
+            g_syslogMgr->add_syslog(L_INFO, "register to relay server %s/%d success", m_ipstr, m_port);
         }
-
-        g_alive_cnt++;
 	}
 	else
 	{
@@ -260,7 +262,7 @@ int CRemoteServer::auth_result_msg_handle(BOOL result)
         {
             _LOG_INFO("auth failed");
     		m_is_authed = FALSE;
-            g_syslogMgr->add_syslog("register to relay server %s/%d failed", m_ipstr, m_port);
+            g_syslogMgr->add_syslog(L_WARN, "register to relay server %s/%d failed", m_ipstr, m_port);
         }
 	}
     return 0;

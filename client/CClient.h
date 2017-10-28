@@ -37,6 +37,9 @@ public:
 	{
 	}
 
+public:
+	void free(); 
+
 private:
 	int register_req_handle(char *buf, int buf_len);
 	int socks_proto4_handle(char *buf, int buf_len);
