@@ -221,15 +221,21 @@ int CLocalServer::msg_request_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int 
     /*create connection*/
     if (remote_domain[0] != 0)
     {
-        _LOG_INFO("getting remote hostname, domain %s", remote_domain);
+        uint64_t dns_req_time = util_get_cur_time();
+        uint64_t dns_resp_time = 0;
         if( 0!= util_gethostbyname(remote_domain, &remote_ipaddr))
         {
-            _LOG_ERROR("get domain of server failed, domain %s", remote_domain);
+            dns_resp_time = util_get_cur_time();
+            _LOG_ERROR("get domain of server failed, domain %s, dns consume %ds", remote_domain,
+                dns_resp_time - dns_req_time);
             /*if parse remote failed, shouldn't close this socks server*/
             pClient->send_connect_result(false);
             pClient->free();
             return 0;
         }
+        dns_resp_time = util_get_cur_time();
+        _LOG_INFO("getting remote hostname, domain %s, dns consume %ds", remote_domain,
+            dns_resp_time - dns_req_time);
     }
 
     _LOG_INFO("get remote info, ipaddr 0x%x, port %u", remote_ipaddr, remote_dstport);
