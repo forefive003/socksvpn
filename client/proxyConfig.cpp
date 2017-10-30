@@ -143,13 +143,13 @@ void proxy_set_servers(int *srv_ip_arr, int srv_cnt)
 
 	if (!isCfgServerOk)
 	{
-		MUTEX_LOCK(m_remote_srv_lock);
+		MUTEX_LOCK(g_remote_srv_lock);
 		if (g_RemoteServ != NULL && g_RemoteServ->is_authed())
 		{
 			/*server not online already, reset authed*/
 			g_RemoteServ->reset_authed();
 		}
-		MUTEX_UNLOCK(m_remote_srv_lock);
+		MUTEX_UNLOCK(g_remote_srv_lock);
 	}
 
 #ifdef _WIN32
@@ -301,10 +301,10 @@ int proxy_cfg_set(proxy_cfg_t *config)
 			proxy_proc_mgr_stop();
 
 			/*remote server*/
-			MUTEX_LOCK(m_remote_srv_lock);
+			MUTEX_LOCK(g_remote_srv_lock);
 			if (g_RemoteServ != NULL)
 				g_RemoteServ->free();
-			MUTEX_UNLOCK(m_remote_srv_lock);
+			MUTEX_UNLOCK(g_remote_srv_lock);
 			
 			memcpy(&g_proxy_cfg, config, sizeof(proxy_cfg_t));
 			proxy_proc_mgr_start();

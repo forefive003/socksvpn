@@ -297,7 +297,7 @@ static void _timer_callback(void* param1, void* param2,
         print_statistic();
     }
     
-	MUTEX_LOCK(m_remote_srv_lock);
+	MUTEX_LOCK(g_remote_srv_lock);
     if (NULL == g_RemoteServ)
     {
     	proxy_cfg_t* cfginfo = proxy_cfg_get();
@@ -317,7 +317,7 @@ static void _timer_callback(void* param1, void* param2,
 	    	g_RemoteServ->send_auth_quest_msg();
 	    }
 	}
-    MUTEX_UNLOCK(m_remote_srv_lock);
+    MUTEX_UNLOCK(g_remote_srv_lock);
 }
 
 int main(int argc, char **argv)
@@ -366,7 +366,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	MUTEX_SETUP(m_remote_srv_lock);
+	MUTEX_SETUP(g_remote_srv_lock);
 
     /*start check timer*/
     np_add_time_job(_timer_callback, NULL, NULL, NULL, NULL, 1, FALSE);
@@ -378,7 +378,7 @@ int main(int argc, char **argv)
     }
 
 	np_wait_stop();
-	MUTEX_CLEANUP(m_remote_srv_lock);
+	MUTEX_CLEANUP(g_remote_srv_lock);
 	loggger_exit();
 	return 0;
 }

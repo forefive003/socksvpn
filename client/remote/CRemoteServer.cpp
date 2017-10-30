@@ -14,7 +14,7 @@
 #include "relay_pkt_def.h"
 #include "CSyslogMgr.h"
 
-MUTEX_TYPE m_remote_srv_lock;
+MUTEX_TYPE g_remote_srv_lock;
 CRemoteServer *g_RemoteServ = NULL;
 
 uint64_t g_latest_alive_time = 0;
@@ -30,25 +30,25 @@ double g_total_data_resp_bps = 0;
 
 BOOL is_remote_authed()
 {
-    MUTEX_LOCK(m_remote_srv_lock);
+    MUTEX_LOCK(g_remote_srv_lock);
     if (g_RemoteServ && g_RemoteServ->is_authed())
     {
-        MUTEX_UNLOCK(m_remote_srv_lock);
+        MUTEX_UNLOCK(g_remote_srv_lock);
         return TRUE;
     }
-    MUTEX_UNLOCK(m_remote_srv_lock);
+    MUTEX_UNLOCK(g_remote_srv_lock);
     return FALSE;
 }
 
 BOOL is_remote_connected()
 {
-    MUTEX_LOCK(m_remote_srv_lock);
+    MUTEX_LOCK(g_remote_srv_lock);
     if (g_RemoteServ && g_RemoteServ->is_connected())
     {
-        MUTEX_UNLOCK(m_remote_srv_lock);
+        MUTEX_UNLOCK(g_remote_srv_lock);
         return TRUE;
     }
-    MUTEX_UNLOCK(m_remote_srv_lock);
+    MUTEX_UNLOCK(g_remote_srv_lock);
     return FALSE;
 }
 
@@ -69,10 +69,10 @@ void CRemoteServer::free_handle()
     g_ConnMgr->free_all_conn();
     
     /*set to null, re init in timer*/
-    MUTEX_LOCK(m_remote_srv_lock);
+    MUTEX_LOCK(g_remote_srv_lock);
     delete g_RemoteServ;
     g_RemoteServ = NULL;
-    MUTEX_UNLOCK(m_remote_srv_lock);
+    MUTEX_UNLOCK(g_remote_srv_lock);
 
     g_syslogMgr->add_syslog(L_INFO, "relay server disconnected and free");
 }
@@ -225,19 +225,24 @@ int CRemoteServer::send_auth_quest_msg()
     c2rhdr.sub_type = htons(C2R_AUTH);
     c2rhdr.reserved = 0;
 
+    MUTEX_LOCK(g_remote_srv_lock);
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
+        MUTEX_UNLOCK(g_remote_srv_lock);
         return -1;
     }
     if(0 != this->send_data((char*)&c2rhdr, sizeof(PKT_C2R_HDR_T)))
     {
+        MUTEX_UNLOCK(g_remote_srv_lock);
         return -1;
     }
     if(0 != this->send_data(buf, buf_len))
     {
+        MUTEX_UNLOCK(g_remote_srv_lock);
         return -1;
     }
-
+    MUTEX_UNLOCK(g_remote_srv_lock);
+    
     _LOG_DEBUG("send local keepalive msg to relay server");
     return 0;
 }

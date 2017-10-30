@@ -45,7 +45,7 @@ public:
     
 };
 
-extern MUTEX_TYPE m_remote_srv_lock;
+extern MUTEX_TYPE g_remote_srv_lock;
 extern CRemoteServer *g_RemoteServ;
 extern BOOL is_remote_authed();
 extern BOOL is_remote_connected();
