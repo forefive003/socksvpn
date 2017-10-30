@@ -1,4 +1,8 @@
-﻿#include "commtype.h"
+﻿#ifndef _WIN32
+#include <pthread.h>
+#endif
+
+#include "commtype.h"
 #include "logproc.h"
 #include "CSyslogMgr.h"
 
@@ -30,7 +34,7 @@ int CSyslogMgr::add_syslog(int level, const char *format, ...)
     }
 
     logNode = new LOG_MSG_T;
-    memset(logNode, 0, sizeof(logNode));
+    memset(logNode, 0, sizeof(LOG_MSG_T));
 
     logNode->nodetime = util_get_cur_time();
     logNode->level = level;
@@ -61,7 +65,7 @@ int CSyslogMgr::add_syslog(int level, char *logdata)
     }
 
     logNode = new LOG_MSG_T;
-    memset(logNode, 0, sizeof(logNode));
+    memset(logNode, 0, sizeof(LOG_MSG_T));
 
     logNode->nodetime = util_get_cur_time();
     logNode->level = level;
