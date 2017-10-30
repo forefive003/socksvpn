@@ -22,7 +22,7 @@ int CRemote::connect_handle(BOOL result)
 
     if (!result)
     {
-        _LOG_WARN("fail to connect to remote %x/%u", m_ipstr, m_port);
+        _LOG_WARN("fail to connect to remote %s/%u", m_ipstr, m_port);
         pConn->client_send_connect_result(false);
         /*先发送报文*/
         pConn->notify_remote_close();
