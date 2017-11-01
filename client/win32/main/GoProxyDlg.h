@@ -102,4 +102,5 @@ public:
 	afx_msg void OnUpdateMenuStart(CCmdUI *pCmdUI);
 	afx_msg void OnUpdateMenuStop(CCmdUI *pCmdUI);
 	afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
+	afx_msg void OnMenuConns();
 };

@@ -16,6 +16,7 @@
 #include "CLocalServer.h"
 #include "CRemoteServer.h"
 #include "socks_client.h"
+#include "CRemoteServerPool.h"
 
 static BOOL g_exit = false;
 
@@ -296,28 +297,8 @@ static void _timer_callback(void* param1, void* param2,
     {
         print_statistic();
     }
-    
-	MUTEX_LOCK(g_remote_srv_lock);
-    if (NULL == g_RemoteServ)
-    {
-    	proxy_cfg_t* cfginfo = proxy_cfg_get();
-
-        g_RemoteServ = new CRemoteServer(cfginfo->vpn_ip, cfginfo->vpn_port);
-//        g_RemoteServ->init_async_write_resource(socks_malloc, socks_free);
-        if(0 != g_RemoteServ->init())
-        {
-        	delete g_RemoteServ;
-        	g_RemoteServ = NULL;
-        }
-    }
-    else if (g_RemoteServ->is_connected())
-    {
-    	if (!g_RemoteServ->is_authed())
-	    {
-	    	g_RemoteServ->send_auth_quest_msg();
-	    }
-	}
-    MUTEX_UNLOCK(g_remote_srv_lock);
+	
+	g_remoteSrvPool->status_check();    
 }
 
 int main(int argc, char **argv)

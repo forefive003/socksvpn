@@ -11,6 +11,9 @@ public:
         m_recv_len = 0;
 
         m_is_authed = FALSE;
+
+        m_latest_auth_time = 0;
+        m_self_pool_index = -1;
     }
     virtual ~CRemoteServer()
     {
@@ -18,6 +21,7 @@ public:
     }
 
 public:
+    void set_self_pool_index(int index);
     int send_auth_quest_msg();
     BOOL is_authed();
     void reset_authed();
@@ -42,13 +46,9 @@ private:
     BOOL m_is_authed;
 
 public:
-    
+    uint64_t m_latest_auth_time;
+    int m_self_pool_index;
 };
-
-extern MUTEX_TYPE g_remote_srv_lock;
-extern CRemoteServer *g_RemoteServ;
-extern BOOL is_remote_authed();
-extern BOOL is_remote_connected();
 
 extern uint64_t g_latest_alive_time;
 extern uint64_t g_alive_cnt;

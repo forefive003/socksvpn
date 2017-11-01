@@ -1,16 +1,21 @@
 #ifndef _SRV_CLIENT_H
 #define _SRV_CLIENT_H
 
+#include "CLocalServerPool.h"
+
 class CClient: public CBaseClient
 {
 public:
-	CClient(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection *owner) : CBaseClient(ipaddr, port, fd, owner)
+	CClient(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection *owner, int srv_index) : CBaseClient(ipaddr, port, fd, owner)
     {
         _LOG_DEBUG("construct client");
+        m_local_srv_index = srv_index;
+        g_localSrvPool->index_session_inc(m_local_srv_index);
     }
 
     virtual ~CClient()
     {
+        g_localSrvPool->index_session_inc(m_local_srv_index);
         _LOG_DEBUG("destruct client");
     }
 
@@ -39,6 +44,9 @@ public:
     int send_data_msg(char *buf, int buf_len);
     int send_connect_result(BOOL result);
     int send_remote_close_msg();
+
+private:
+    int m_local_srv_index;
 };
 
 #endif

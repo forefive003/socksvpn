@@ -9,6 +9,7 @@
 #include "CClient.h"
 #include "CVpnRemote.h"
 #include "CRemoteServer.h"
+#include "CRemoteServerPool.h"
 
 int CVpnRemote::send_client_close_msg()
 {
@@ -34,24 +35,18 @@ int CVpnRemote::send_client_close_msg()
     c2rhdr.reserved = 0;
     PKT_C2R_HDR_HTON(&c2rhdr);
 
-    MUTEX_LOCK(g_remote_srv_lock);
-    if (NULL == g_RemoteServ)
+    g_remoteSrvPool->lock_index(m_remote_srv_index);
+    if(0 != g_remoteSrvPool->send_on_conn_obj(m_remote_srv_index, (char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
-        _LOG_WARN("remote server NULL when send data.");
+        g_remoteSrvPool->unlock_index(m_remote_srv_index);
         return -1;
     }
-    if(0 != g_RemoteServ->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
+    if(0 != g_remoteSrvPool->send_on_conn_obj(m_remote_srv_index, (char*)&c2rhdr, sizeof(PKT_C2R_HDR_T)))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
+        g_remoteSrvPool->unlock_index(m_remote_srv_index);
         return -1;
     }
-    if(0 != g_RemoteServ->send_data((char*)&c2rhdr, sizeof(PKT_C2R_HDR_T)))
-    {
-        MUTEX_UNLOCK(g_remote_srv_lock);
-        return -1;
-    }
-    MUTEX_UNLOCK(g_remote_srv_lock);
+    g_remoteSrvPool->unlock_index(m_remote_srv_index);
 
     _LOG_INFO("client(0x%x/%u/fd%d) send client close msg to remote", 
         pConn->get_client_ipaddr(), pConn->get_client_port(), pConn->get_client_fd());
@@ -81,29 +76,23 @@ int CVpnRemote::send_client_connect_msg(char *buf, int buf_len)
     c2rhdr.reserved = 0;
     PKT_C2R_HDR_HTON(&c2rhdr);
 
-    MUTEX_LOCK(g_remote_srv_lock);
-    if (NULL == g_RemoteServ)
+    g_remoteSrvPool->lock_index(m_remote_srv_index);
+    if(0 != g_remoteSrvPool->send_on_conn_obj(m_remote_srv_index, (char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
-        _LOG_WARN("remote server NULL when send data.");
+        g_remoteSrvPool->unlock_index(m_remote_srv_index);
         return -1;
     }
-    if(0 != g_RemoteServ->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
+    if(0 != g_remoteSrvPool->send_on_conn_obj(m_remote_srv_index, (char*)&c2rhdr, sizeof(PKT_C2R_HDR_T)))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
+        g_remoteSrvPool->unlock_index(m_remote_srv_index);
         return -1;
     }
-    if(0 != g_RemoteServ->send_data((char*)&c2rhdr, sizeof(PKT_C2R_HDR_T)))
+    if(0 != g_remoteSrvPool->send_on_conn_obj(m_remote_srv_index, buf, buf_len))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
+        g_remoteSrvPool->unlock_index(m_remote_srv_index);
         return -1;
     }
-    if(0 != g_RemoteServ->send_data(buf, buf_len))
-    {
-        MUTEX_UNLOCK(g_remote_srv_lock);
-        return -1;
-    }
-    MUTEX_UNLOCK(g_remote_srv_lock);
+    g_remoteSrvPool->unlock_index(m_remote_srv_index);
 
     _LOG_INFO("client(0x%x/%u/fd%d) send connect msg to remote", 
         pConn->get_client_ipaddr(), pConn->get_client_port(), pConn->get_client_fd());
@@ -133,29 +122,23 @@ int CVpnRemote::send_data_msg(char *buf, int buf_len)
     c2rhdr.reserved = 0;
     PKT_C2R_HDR_HTON(&c2rhdr);
 
-    MUTEX_LOCK(g_remote_srv_lock);
-    if (NULL == g_RemoteServ)
+    g_remoteSrvPool->lock_index(m_remote_srv_index);
+    if(0 != g_remoteSrvPool->send_on_conn_obj(m_remote_srv_index, (char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
-        _LOG_WARN("remote server NULL when send data.");        
+        g_remoteSrvPool->unlock_index(m_remote_srv_index);
         return -1;
     }
-    if(0 != g_RemoteServ->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
+    if(0 != g_remoteSrvPool->send_on_conn_obj(m_remote_srv_index, (char*)&c2rhdr, sizeof(PKT_C2R_HDR_T)))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
+        g_remoteSrvPool->unlock_index(m_remote_srv_index);
         return -1;
     }
-    if(0 != g_RemoteServ->send_data((char*)&c2rhdr, sizeof(PKT_C2R_HDR_T)))
+    if(0 != g_remoteSrvPool->send_on_conn_obj(m_remote_srv_index, buf, buf_len))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
+        g_remoteSrvPool->unlock_index(m_remote_srv_index);
         return -1;
     }
-    if(0 != g_RemoteServ->send_data(buf, buf_len))
-    {
-        MUTEX_UNLOCK(g_remote_srv_lock);
-        return -1;
-    }
-    MUTEX_UNLOCK(g_remote_srv_lock);
+    g_remoteSrvPool->unlock_index(m_remote_srv_index);
 
     return 0;
 }

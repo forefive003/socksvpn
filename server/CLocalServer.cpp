@@ -14,8 +14,11 @@
 #include "socks_server.h"
 #include "CSocksMem.h"
 
-MUTEX_TYPE m_local_srv_lock;
-CLocalServer *g_LocalServ = NULL;
+
+void CLocalServer::set_self_pool_index(int index)
+{
+    m_self_pool_index = index;
+}
 
 int CLocalServer::connect_handle(BOOL result)
 {
@@ -205,7 +208,7 @@ int CLocalServer::msg_request_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int 
     CConnection *pConn = new CConnection();
     g_ConnMgr->add_conn(pConn);
     
-    CClient *pClient = new CClient(r2shdr->client_pub_ip, r2shdr->client_pub_port, -1, pConn);
+    CClient *pClient = new CClient(r2shdr->client_pub_ip, r2shdr->client_pub_port, -1, pConn, m_self_pool_index);
     g_total_client_cnt++;
     pClient->set_inner_info(r2shdr->client_inner_ip, r2shdr->client_inner_port);
     pConn->attach_client(pClient);
@@ -438,11 +441,9 @@ void CLocalServer::free_handle()
     ///TODO:
     //g_ConnMgr->free_all_conn();
 
-    MUTEX_LOCK(m_local_srv_lock);
     /*set to null, re init in timer*/
-    delete g_LocalServ;
-    g_LocalServ = NULL;
-    MUTEX_UNLOCK(m_local_srv_lock);
+    g_localSrvPool->del_conn_obj(m_self_pool_index);
+    delete this;
 }
 
 int CLocalServer::send_pre_handle()

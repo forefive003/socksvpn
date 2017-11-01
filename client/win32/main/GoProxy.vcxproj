@@ -206,8 +206,10 @@
     <ClInclude Include="..\..\CLocalServer.h" />
     <ClInclude Include="..\..\proxyConfig.h" />
     <ClInclude Include="..\..\remote\CRemoteServer.h" />
+    <ClInclude Include="..\..\remote\CRemoteServerPool.h" />
     <ClInclude Include="..\..\remote\CSrvRemote.h" />
     <ClInclude Include="..\..\remote\CVpnRemote.h" />
+    <ClInclude Include="ConInfoDlg.h" />
     <ClInclude Include="DebugDlg.h" />
     <ClInclude Include="GoProxy.h" />
     <ClInclude Include="GoProxyDlg.h" />
@@ -257,8 +259,10 @@
     <ClCompile Include="..\..\CLocalServer.cpp" />
     <ClCompile Include="..\..\proxyConfig.cpp" />
     <ClCompile Include="..\..\remote\CRemoteServer.cpp" />
+    <ClCompile Include="..\..\remote\CRemoteServerPool.cpp" />
     <ClCompile Include="..\..\remote\CSrvRemote.cpp" />
     <ClCompile Include="..\..\remote\CVpnRemote.cpp" />
+    <ClCompile Include="ConInfoDlg.cpp" />
     <ClCompile Include="DebugDlg.cpp" />
     <ClCompile Include="GoProxy.cpp" />
     <ClCompile Include="GoProxyDlg.cpp" />

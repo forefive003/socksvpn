@@ -266,62 +266,39 @@ static void _timer_callback(void* param1, void* param2,
         print_statistic();
     }
 
-    MUTEX_LOCK(m_local_srv_lock);
-    if (NULL == g_LocalServ)
+    /*如果是根据域名,先获取relay ip和端口*/
+    if (g_relay_domain[0] != 0)
     {
-        /*如果是根据域名,先获取relay ip和端口*/
-        if (g_relay_domain[0] != 0)
-        {
-            g_relay_ip = 0;
-            g_relay_port = 0;
+        g_relay_ip = 0;
+        g_relay_port = 0;
 
-            char relay_ipstr[HOST_IP_LEN + 1] = {0};
-            short relay_port = 0;
-            if (0 != g_webApi->getRelayServerIpPort(relay_ipstr, &relay_port))
+        char relay_ipstr[HOST_IP_LEN + 1] = {0};
+        short relay_port = 0;
+        if (0 != g_webApi->getRelayServerIpPort(relay_ipstr, &relay_port))
+        {
+            _LOG_WARN("get relay ip port from %s failed", g_relay_domain);
+            printf("get relay ip port from %s failed\n", g_relay_domain);
+        }
+        else
+        {
+            strncpy(g_relay_ipstr, relay_ipstr, HOST_IP_LEN);
+
+            if (0 != engine_str_to_ipv4(g_relay_ipstr, (uint32_t*)&g_relay_ip))
             {
-                _LOG_WARN("get relay ip port from %s failed", g_relay_domain);
-                printf("get relay ip port from %s failed\n", g_relay_domain);
+                _LOG_WARN("Invalid relay server %s", g_relay_ipstr);
             }
             else
             {
-                strncpy(g_relay_ipstr, relay_ipstr, HOST_IP_LEN);
-
-                if (0 != engine_str_to_ipv4(g_relay_ipstr, (uint32_t*)&g_relay_ip))
-                {
-                    _LOG_WARN("Invalid relay server %s", g_relay_ipstr);
-                }
-                else
-                {
-                    g_relay_ip = ntohl(g_relay_ip);
-                    g_relay_port = relay_port;
-                    _LOG_INFO("get relay server from platform: %s:%u", g_relay_ipstr, g_relay_port);
-                    printf("get relay ip port from %s: %s/%d\n", g_relay_domain, g_relay_ipstr, g_relay_port);
-                }                
-            }
-        }
-
-        if (g_relay_ip != 0)
-        {
-            g_LocalServ = new CLocalServer(g_relay_ip, g_relay_port);
-//            g_LocalServ->init_async_write_resource(socks_malloc, socks_free);
-            if(0 != g_LocalServ->init())
-            {
-                delete g_LocalServ;
-                g_LocalServ = NULL;
-            }
+                g_relay_ip = ntohl(g_relay_ip);
+                g_relay_port = relay_port;
+                _LOG_INFO("get relay server from platform: %s:%u", g_relay_ipstr, g_relay_port);
+                printf("get relay ip port from %s: %s/%d\n", g_relay_domain, g_relay_ipstr, g_relay_port);
+            }                
         }
     }
-    else
-    {
-        if (g_LocalServ->is_connected())
-        {
-            if (expire_cnt % 10 == 0)
-            {
-                g_LocalServ->send_keepalive();
-            }
-        }
-    }
-    MUTEX_UNLOCK(m_local_srv_lock);
+    
+    g_localSrvPool = new CLocalServerPool(MAX_LOCAL_SRV_CNT);
+    g_localSrvPool->init();
 }
 
 int main(int argc, char **argv)

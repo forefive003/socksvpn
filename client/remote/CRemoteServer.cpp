@@ -13,9 +13,7 @@
 #include "CRemoteServer.h"
 #include "relay_pkt_def.h"
 #include "CSyslogMgr.h"
-
-MUTEX_TYPE g_remote_srv_lock;
-CRemoteServer *g_RemoteServ = NULL;
+#include "CRemoteServerPool.h"
 
 uint64_t g_latest_alive_time = 0;
 uint64_t g_alive_cnt = 0;
@@ -28,28 +26,9 @@ double g_total_data_req_bps = 0;
 double g_total_data_resp_pps = 0;
 double g_total_data_resp_bps = 0;
 
-BOOL is_remote_authed()
+void CRemoteServer::set_self_pool_index(int index)
 {
-    MUTEX_LOCK(g_remote_srv_lock);
-    if (g_RemoteServ && g_RemoteServ->is_authed())
-    {
-        MUTEX_UNLOCK(g_remote_srv_lock);
-        return TRUE;
-    }
-    MUTEX_UNLOCK(g_remote_srv_lock);
-    return FALSE;
-}
-
-BOOL is_remote_connected()
-{
-    MUTEX_LOCK(g_remote_srv_lock);
-    if (g_RemoteServ && g_RemoteServ->is_connected())
-    {
-        MUTEX_UNLOCK(g_remote_srv_lock);
-        return TRUE;
-    }
-    MUTEX_UNLOCK(g_remote_srv_lock);
-    return FALSE;
+    m_self_pool_index = index;
 }
 
 BOOL CRemoteServer::is_authed()
@@ -69,12 +48,12 @@ void CRemoteServer::free_handle()
     g_ConnMgr->free_all_conn();
     
     /*set to null, re init in timer*/
-    MUTEX_LOCK(g_remote_srv_lock);
-    delete g_RemoteServ;
-    g_RemoteServ = NULL;
-    MUTEX_UNLOCK(g_remote_srv_lock);
+    g_remoteSrvPool->del_conn_obj(m_self_pool_index);
 
-    g_syslogMgr->add_syslog(L_INFO, "relay server disconnected and free");
+    g_syslogMgr->add_syslog(L_INFO, "relay server(local %s/%d, index %d) disconnected and free",
+        m_local_ipstr, m_local_port, m_self_pool_index);
+
+    delete this;
 }
 
 int CRemoteServer::connect_handle(BOOL result)
@@ -109,7 +88,6 @@ int CRemoteServer::connect_handle(BOOL result)
 
 	return 0;
 }
-
 
 int CRemoteServer::build_authen_msg(char *buf)
 {
@@ -225,23 +203,18 @@ int CRemoteServer::send_auth_quest_msg()
     c2rhdr.sub_type = htons(C2R_AUTH);
     c2rhdr.reserved = 0;
 
-    MUTEX_LOCK(g_remote_srv_lock);
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
         return -1;
     }
     if(0 != this->send_data((char*)&c2rhdr, sizeof(PKT_C2R_HDR_T)))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
         return -1;
     }
     if(0 != this->send_data(buf, buf_len))
     {
-        MUTEX_UNLOCK(g_remote_srv_lock);
         return -1;
     }
-    MUTEX_UNLOCK(g_remote_srv_lock);
     
     _LOG_DEBUG("send local keepalive msg to relay server");
     return 0;

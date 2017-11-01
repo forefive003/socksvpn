@@ -2,6 +2,8 @@
 #ifndef _SOCKS5_SERVER_H
 #define _SOCKS5_SERVER_H
 
+#define MAX_LOCAL_SRV_CNT  10
+
 extern char g_relay_ipstr[HOST_IP_LEN + 1];
 extern char g_relay_domain[HOST_DOMAIN_LEN + 1];
 extern uint32_t g_relay_ip;

@@ -11,6 +11,7 @@
 #include "CSocksMem.h"
 #include "CRemoteServer.h"
 #include "CSyslogMgr.h"
+#include "CRemoteServerPool.h"
 
 int CClient::register_req_handle(char *buf, int buf_len)
 {
@@ -205,12 +206,12 @@ int CClient::socks_proto5_handle(char *buf, int buf_len)
 	this->m_socks_proto_version = 5;
 
 	/*添加一个远程连接*/
-	if (is_remote_authed())
+	int active_srv_index = g_remoteSrvPool->get_active_conn_obj();
+	if (-1 != active_srv_index)
 	{
 		proxy_cfg_t* cfginfo = proxy_cfg_get();
 		CConnection *pConn = (CConnection *)this->m_owner_conn;
-		CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn);
-//		pRemote->init_async_write_resource(socks_malloc, socks_free);
+		CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn, active_srv_index);
         pConn->attach_remote(pRemote);
 
 		if (0 != pRemote->init())
@@ -226,7 +227,7 @@ int CClient::socks_proto5_handle(char *buf, int buf_len)
 	}
 	else
 	{
-		_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for remote not authed", m_ipstr, m_port, 
+		_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for no authed remote server", m_ipstr, m_port, 
 			m_inner_ipstr, m_inner_port, m_fd);
 		this->auth_result_handle(FALSE);
 	}
@@ -259,12 +260,12 @@ int CClient::socks_proto4_handle(char *buf, int buf_len)
 	this->m_socks_proto_version = 4;
 
 	/*添加一个远程连接*/
-	if (is_remote_authed())
+	int active_srv_index = g_remoteSrvPool->get_active_conn_obj();
+	if (-1 != active_srv_index)
 	{
 		proxy_cfg_t* cfginfo = proxy_cfg_get();
 		CConnection *pConn = (CConnection *)this->m_owner_conn;
-		CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn);
-//		pRemote->init_async_write_resource(socks_malloc, socks_free);
+		CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn, active_srv_index);
         pConn->attach_remote(pRemote);
 
 		if (0 != pRemote->init())
@@ -275,7 +276,7 @@ int CClient::socks_proto4_handle(char *buf, int buf_len)
 		    delete pRemote;
 		    return -1;
 		}
-		
+
 		this->auth_result_handle(TRUE);
 
 		/*05 01 00 01 CA 6C 16 05 00 50
@@ -310,7 +311,7 @@ int CClient::socks_proto4_handle(char *buf, int buf_len)
 	}
 	else
 	{
-		_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for remote not authed", m_ipstr, m_port, 
+		_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for no authed remote server", m_ipstr, m_port, 
 			m_inner_ipstr, m_inner_port, m_fd);
 		this->auth_result_handle(FALSE);
 	}

@@ -7,34 +7,22 @@
 #include "CClient.h"
 #include "CRemote.h"
 #include "CLocalServer.h"
+#include "CLocalServerPool.h"
 #include "socks_server.h"
-
 
 int CClient::send_data(char *buf, int buf_len)
 {
-    int ret = 0;
-    /*notify local server to send*/
-    if (NULL != g_LocalServ)
+    if(0 != g_localSrvPool->send_on_conn_obj(m_local_srv_index, buf, buf_len))
     {
-        if(0 != g_LocalServ->m_send_q.produce_q(buf, buf_len))
-        {
-            return -1;
-        }
-
-        if (g_LocalServ->m_send_q.node_cnt() >= g_LocalServ->m_send_q_busy_cnt
-            || m_send_q.node_cnt() >= this->m_send_q_busy_cnt)
-        {
-            this->m_owner_conn->set_client_busy(true);
-        }
-
-        ret = g_LocalServ->register_write();
+        return -1;
     }
-    else
+
+    if (g_localSrvPool->is_conn_obj_send_busy(m_local_srv_index))
     {
-        ret = -1;
+        this->m_owner_conn->set_client_busy(true);
     }
-    
-    return ret;
+
+    return 0;
 }
 
 int CClient::send_remote_close_msg()

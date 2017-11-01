@@ -32,6 +32,7 @@ private:
 public:
     int send_register();
     int send_keepalive();
+    void set_self_pool_index(int index);
 
 private:
     int msg_request_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len);
@@ -41,8 +42,10 @@ private:
 private:
     char m_recv_buf[2048];
     int m_recv_len;
+
+public:
+    uint64_t m_latest_alive_time;
+    int m_self_pool_index;
 };
 
-extern MUTEX_TYPE m_local_srv_lock;
-extern CLocalServer *g_LocalServ;
 #endif
