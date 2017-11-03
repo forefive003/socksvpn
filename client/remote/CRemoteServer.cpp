@@ -413,3 +413,28 @@ int CRemoteServer::recv_handle(char *buf, int buf_len)
     ret = ret;
     return 0;
 }
+
+void CRemoteServer::print_statistic(FILE* pFd)
+{
+    char dateformat[64] = {'\0'};
+    struct tm uptimeTm;
+    #ifdef _WIN32
+    localtime_s(&uptimeTm, (time_t*)&this->m_latest_auth_time);
+    #else
+    localtime_r((time_t*)&this->m_latest_auth_time, &uptimeTm);
+    #endif
+
+    sprintf(dateformat, "%04d-%02d-%02d %02d:%02d:%02d", 
+        uptimeTm.tm_year + 1900, 
+        uptimeTm.tm_mon + 1, 
+        uptimeTm.tm_mday, 
+        uptimeTm.tm_hour, 
+        uptimeTm.tm_min, 
+        uptimeTm.tm_sec);
+
+    fprintf(pFd, "index %d, inner %s:%u, authed: %d, update-time %s\n", 
+        m_self_pool_index,
+        m_inner_ipstr, m_inner_port, 
+        m_is_authed,
+        dateformat);
+}

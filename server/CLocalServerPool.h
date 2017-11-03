@@ -8,7 +8,6 @@ class CLocalServerPool : public CConnPool
 public:
 	CLocalServerPool(int maxConnCnt) : CConnPool(maxConnCnt)
 	{
-		m_cur_index = 0;
 		m_session_cnt = new int[maxConnCnt];
 
 		for (int ii = 0; ii<maxConnCnt; ii++)
@@ -23,6 +22,7 @@ public:
     }
 
 public:
+	void print_statistic(FILE* pFd);
 	void status_check();/*if not connected, try it; if not auth try it also*/
 
 	void index_session_inc(int index)
@@ -43,7 +43,6 @@ public:
 	}
 
 private:
-	int m_cur_index;
 	int *m_session_cnt;
 };
 

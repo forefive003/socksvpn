@@ -5,6 +5,8 @@
 
 #include "engine_ip.h"
 
+/*连接数最大数量*/
+#define MAX_REMOTE_SRV_CNT  10
 
 /*默认配置服务端口*/
 #define DEF_PROC_COMM_SRV_PORT 33332

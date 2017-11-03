@@ -35,6 +35,7 @@ public:
     }
 
 public:
+    void set_self_pool_index(int index);
     void set_config(CServerCfg *srvCfg);
 
     void add_client();
@@ -70,8 +71,6 @@ private:
     CServerCfg m_srvCfg;
 
 public:
-    uint64_t m_update_time;
-
     uint32_t m_client_cnt;
     uint64_t m_send_client_close_cnt;
     uint64_t m_send_client_connect_cnt;
@@ -80,6 +79,10 @@ public:
     uint64_t m_recv_remote_close_cnt;
     uint64_t m_recv_data_cnt;
     uint64_t m_recv_srv_alive_cnt;
+
+public:
+    uint64_t m_update_time;
+    int m_self_pool_index;
 };
 
 #endif

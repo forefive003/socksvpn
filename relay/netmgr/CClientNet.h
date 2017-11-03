@@ -17,9 +17,6 @@ public:
 
         m_is_authed = FALSE;
         
-        memset(m_username, 0, sizeof(m_username));
-        memset(m_passwd, 0, sizeof(m_passwd));
-
         m_update_time = util_get_cur_time();
 
         m_send_remote_close_cnt = 0;
@@ -30,6 +27,8 @@ public:
         m_recv_data_cnt = 0;
 
         m_recv_alive_cnt = 0;
+
+        m_self_pool_index = -1;
         _LOG_INFO("construct clientserver, %s:%u, fd %d", m_ipstr, m_port, m_fd);
     }
     virtual ~CClientNet()
@@ -37,6 +36,7 @@ public:
         _LOG_INFO("destruct clientserver, %s:%u, fd %d", m_ipstr, m_port, m_fd);
     }
 
+    void set_self_pool_index(int index);
     int send_auth_result_msg(BOOL auth_ok);
     BOOL is_self(uint32_t pub_ipaddr, uint16_t pub_port);
     void set_user_passwd(char *username, char *passwd);
@@ -60,15 +60,15 @@ private:
     int m_recv_len;
 
     BOOL m_is_authed;
-    char m_username[MAX_USERNAME_LEN + 1];
-    char m_passwd[MAX_PASSWD_LEN + 1];
+
     uint32_t m_inner_ipaddr;
     uint16_t m_inner_port;
     char m_inner_ipstr[HOST_IP_LEN + 1];
     
+    /*连接的server的信息*/
+    uint32_t m_srv_pub_ipaddr;
+    uint32_t m_srv_private_ipaddr;
 public:
-    uint64_t m_update_time;
-
     uint64_t m_send_remote_close_cnt;
     uint64_t m_send_connect_result_cnt;
     uint64_t m_send_data_cnt;
@@ -78,6 +78,10 @@ public:
     uint64_t m_recv_client_close_cnt;
     uint64_t m_recv_connect_request_cnt;
     uint64_t m_recv_data_cnt;
+
+public:
+    uint64_t m_update_time;
+    int m_self_pool_index;
 };
 
 #endif

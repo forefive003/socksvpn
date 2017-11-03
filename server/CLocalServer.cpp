@@ -507,3 +507,25 @@ int CLocalServer::send_post_handle()
     MUTEX_UNLOCK(g_ConnMgr->m_obj_lock);
     return 0;
 }
+
+void CLocalServer::print_statistic(FILE* pFd)
+{
+    char dateformat[64] = {'\0'};
+    struct tm uptimeTm;
+    #ifdef _WIN32
+    localtime_s(&uptimeTm, (time_t*)&this->m_latest_alive_time);
+    #else
+    localtime_r((time_t*)&this->m_latest_alive_time, &uptimeTm);
+    #endif
+
+    sprintf(dateformat, "%04d-%02d-%02d %02d:%02d:%02d", 
+        uptimeTm.tm_year + 1900, 
+        uptimeTm.tm_mon + 1, 
+        uptimeTm.tm_mday, 
+        uptimeTm.tm_hour, 
+        uptimeTm.tm_min, 
+        uptimeTm.tm_sec);
+
+    fprintf(pFd, "index %d, inner %s:%u, update-time %s\n", m_self_pool_index,
+        m_inner_ipstr, m_inner_port, dateformat);
+}

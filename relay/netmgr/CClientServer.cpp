@@ -8,6 +8,7 @@
 #include "relay_pkt_def.h"
 #include "CNetRecv.h"
 #include "CClientNet.h"
+#include "CClientNetSet.h"
 #include "CClientNetMgr.h"
 #include "socks_relay.h"
 #include "CClientServer.h"
@@ -38,14 +39,21 @@ int CClientServer::accept_handle(int conn_fd, uint32_t client_ip, uint16_t clien
     setsockopt(conn_fd, SOL_TCP, TCP_KEEPCNT, (void *)&keepcount , sizeof(keepcount ));
 
     CClientNet *clientNet = new CClientNet(client_ip, client_port, conn_fd);
-//    clientNet->init_async_write_resource(socks_malloc, socks_free);
-    if (0 != clientNet->init())
+    int index = g_clientNetPool->add_conn_obj((CNetRecv*)clientNet);
+    if (-1 == index)
     {
+        _LOG_ERROR("fail to add new conn obj for client server");
         delete clientNet;
         return -1;
     }
+    clientNet->set_self_pool_index(index);
 
-    /*添加到管理中*/
-    g_ClientNetMgr->add_client_server(clientNet);
+    if (0 != clientNet->init())
+    {
+         g_clientNetPool->del_conn_obj(index);
+        delete clientNet;
+        return -1;
+    }    
+
     return 0;
 }

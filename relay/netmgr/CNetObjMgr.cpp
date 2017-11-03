@@ -1,0 +1,246 @@
+#include "commtype.h"
+#include "logproc.h"
+#include "common_def.h"
+#include "relay_pkt_def.h"
+#include "CNetRecv.h"
+#include "CClientNet.h"
+#include "CClientNetSet.h"
+#include "CClientNetMgr.h"
+#include "socks_relay.h"
+
+
+CClientNetMgr *g_ClientNetMgr = NULL;
+
+CNetObjMgr::CNetObjMgr()
+{
+    MUTEX_SETUP(m_obj_lock);
+}
+
+CNetObjMgr::~CNetObjMgr()
+{
+    MUTEX_CLEANUP(m_obj_lock);
+}
+
+void CNetObjMgr::lock()
+{
+    MUTEX_LOCK(m_obj_lock);
+}
+
+void CNetObjMgr::unlock()
+{
+    MUTEX_UNLOCK(m_obj_lock);
+}
+
+int CNetObjMgr::add_netobj_set(CNetObjSet *serverSet)
+{
+    MUTEX_LOCK(m_obj_lock);
+    m_netset_objs.push_back(serverSet);
+    MUTEX_UNLOCK(m_obj_lock);
+
+    _LOG_INFO("add new server set at %s", serverSet->m_ipstr);
+    return 0;
+}
+
+void CNetObjMgr::del_netobj_set(CNetObjSet *serverSet)
+{
+    _LOG_INFO("del server set at %s", serverSet->m_ipstr);
+
+    MUTEX_LOCK(m_obj_lock);
+    m_netset_objs.remove(serverSet);
+    MUTEX_UNLOCK(m_obj_lock);
+}
+
+CNetObjSet* CNetObjMgr::get_netobj_set(uint32_t pub_ipaddr, uint32_t private_ipaddr)
+{
+    NETOBJ_SET_LIST_Itr itr;
+    CNetObjSet *serverSet = NULL;
+
+    for (itr = m_netset_objs.begin();
+            itr != m_netset_objs.end();
+            itr++)
+    {
+        serverSet = *itr;
+        if (serverSet->is_self(pub_ipaddr, private_ipaddr))
+        {
+            return serverSet;
+        }
+    }
+    return NULL;
+}
+
+void CNetObjMgr::aged_netobj()
+{
+    NETOBJ_SET_LIST_Itr itr;
+    CNetObjSet *netObjSet = NULL;
+    
+    uint64_t cur_time = util_get_cur_time();
+
+    MUTEX_LOCK(m_obj_lock);
+    for (itr = m_netset_objs.begin();
+            itr != m_netset_objs.end();
+            )
+    {
+        netObjSet = *itr;
+        itr++;
+        
+        netObjSet->aged_netobj();
+    }
+    MUTEX_UNLOCK(m_obj_lock);    
+    return;
+}
+
+int CNetObjMgr::add_netobj(int index, uint32_t pub_ipaddr, uint32_t private_ipaddr)
+{
+    return 0;
+}
+
+void CNetObjMgr::del_netobj(int index, uint32_t pub_ipaddr, uint32_t private_ipaddr)
+{
+    CNetObjSet *netobjSet = NULL;
+
+    this->lock();
+
+    netobjSet = this->get_netobj_set(pub_ipaddr, private_ipaddr);
+    if (NULL == netobjSet)
+    {
+        _LOG_WARN("no netobjSet when del netobj (0x%x/0x%x), index %d",
+            pub_ipaddr, private_ipaddr, index);
+    }
+    else
+    {
+        netobjSet->del_server_obj(index);
+        if (netobjSet->get_server_obj_cnt() == 0)
+        {
+            /*没有元素则删除*/
+            this->del_netobj_set(netobjSet);
+            delete netobjSet;
+        }
+    }
+    
+    this->unlock();
+}
+
+void CNetObjMgr::print_statistic(FILE *pFd)
+{
+    NETOBJ_SET_LIST_Itr itr;
+    CNetObjSet *netObjSet = NULL;
+    
+    MUTEX_LOCK(m_obj_lock);
+    for (itr = m_netset_objs.begin();
+            itr != m_netset_objs.end();
+            itr++)
+    {
+        netObjSet = *itr;        
+        netObjSet->print_statistic(pFd);
+    }
+    MUTEX_UNLOCK(m_obj_lock);
+
+    fprintf(pFd, "\n");
+
+    return;   
+}
+
+int CClientNetMgr::add_netobj(int index, uint32_t pub_ipaddr, uint32_t private_ipaddr)
+{
+    this->lock();
+
+    CClientNetSet *clientNetSet = NULL;
+    clientNetSet = (CClientNetSet*)this->get_netobj_set(pub_ipaddr, private_ipaddr);
+    if (NULL == clientNetSet)
+    {
+        clientNetSet = new CClientNetSet(pub_ipaddr, private_ipaddr);
+        assert(clientNetSet != NULL);
+        /*添加到管理中*/
+        this->add_netobj_set((CNetObjSet*)clientNetSet);
+    }
+
+    clientNetSet->add_server_obj(index);
+    this->unlock(); 
+
+    return 0; 
+}
+
+int CSocksSrvMgr::add_netobj(int index, uint32_t pub_ipaddr, uint32_t private_ipaddr, CServerCfg *srvCfg)
+{
+    this->lock();
+
+    CSocksNetSet *socksNetSet = NULL;
+    socksNetSet = (CSocksNetSet*)this->get_netobj_set(pub_ipaddr, private_ipaddr);
+    if (NULL == socksNetSet)
+    {
+        socksNetSet = new CSocksNetSet(pub_ipaddr, private_ipaddr, srvCfg);
+        assert(socksNetSet != NULL);
+
+        /*添加到管理中*/
+        this->add_netobj_set((CNetObjSet*)socksNetSet);
+    }
+
+    socksNetSet->add_server_obj(index);
+    this->unlock(); 
+
+    return 0; 
+}
+
+int CSocksSrvMgr::get_running_socks_servers(uint32_t pub_ipaddr, uint32_t private_ipaddr,
+                        int *serv_array)
+{
+    int ret = 0;
+
+    this->lock(); 
+    CSocksNetSet *socksNetSet = (CSocksSrvMgr*)this->get_netobj_set(pub_ipaddr, private_ipaddr);
+    if (NULL == socksNetSet)
+    {
+        this->unlock(); 
+        return 0;
+    }
+
+    ret = socksNetSet->get_running_socks_servers(serv_array);
+    this->unlock(); 
+
+    return ret;
+}
+
+CNetObjSet* CSocksSrvMgr::get_socks_server_by_auth(uint32_t srv_pub_ipaddr, 
+        const char *username, const char *passwd)
+{
+    NETOBJ_SET_LIST_Itr itr;
+    CSocksNetSet *socksNetSet = NULL;
+    
+    for (itr = m_netset_objs.begin();
+            itr != m_netset_objs.end();
+            itr++)
+    {
+        socksNetSet = (CSocksNetSet*)*itr;
+        
+        if (socksNetSet->m_ipaddr != srv_pub_ipaddr)
+        {
+            continue;
+        }
+
+        if(socksNetSet->user_authen(username, passwd))
+        {
+            return (CNetObjSet*)socksNetSet;
+        }
+    }
+
+    return NULL;  
+}
+
+int CSocksSrvMgr::get_active_socks_server(uint32_t pub_ipaddr, uint32_t private_ipaddr)
+{
+    NETOBJ_SET_LIST_Itr itr;
+    CNetObjSet *serverSet = NULL;
+
+    for (itr = m_netset_objs.begin();
+            itr != m_netset_objs.end();
+            itr++)
+    {
+        serverSet = *itr;
+        if (serverSet->is_self(pub_ipaddr, private_ipaddr))
+        {
+            return serverSet->get_active_socks_server();
+        }
+    }
+    
+    return -1;
+}

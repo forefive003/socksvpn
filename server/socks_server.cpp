@@ -250,6 +250,9 @@ static void print_statistic()
     print_global_statistic(pFd);
     g_ConnMgr->print_statistic(pFd, false);
 
+    fprintf(pFd, "SRVPOOL-STAT:\n");
+    g_localSrvPool->print_statisc(pFd);
+
     fclose(pFd);
     return;
 }
@@ -296,9 +299,8 @@ static void _timer_callback(void* param1, void* param2,
             }                
         }
     }
-    
-    g_localSrvPool = new CLocalServerPool(MAX_LOCAL_SRV_CNT);
-    g_localSrvPool->init();
+        
+    g_localSrvPool->status_check();
 }
 
 int main(int argc, char **argv)
@@ -384,6 +386,9 @@ int main(int argc, char **argv)
         strncpy(g_relay_ipstr, ipstr, HOST_IP_LEN);
         printf("relay server: %s:%u\n", g_relay_ipstr, g_relay_port);
     }
+
+    g_localSrvPool = new CLocalServerPool(MAX_LOCAL_SRV_CNT);
+    g_localSrvPool->init();
 
     /*start check timer*/
     np_add_time_job(_timer_callback, NULL, NULL, NULL, NULL, 3, FALSE);

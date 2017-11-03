@@ -12,8 +12,11 @@
 #include "CClientServer.h"
 #include "CRemoteServer.h"
 #include "CConfigServer.h"
-#include "CSocksSrvMgr.h"
-#include "CClientNetMgr.h"
+
+#include "CNetObjMgr.h"
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+
 #include "socks_relay.h"
 #include "sigproc.h"
 #include "CSocksMem.h"
@@ -161,7 +164,11 @@ static void  print_statistic()
     }
     print_global_statistic(pFd);
     g_ConnMgr->print_statistic(pFd, false);
+
+    fprintf(pFd, "CLIENT-STAT:\n");
     g_SocksSrvMgr->print_statistic(pFd);
+
+    fprintf(pFd, "SERVER-STAT:\n");
     g_ClientNetMgr->print_statistic(pFd);
 
     fclose(pFd);
@@ -296,8 +303,13 @@ int main(int argc, char **argv)
     }
 
     g_ConnMgr = CConnMgr::instance();
-    g_SocksSrvMgr = CSocksSrvMgr::instance();
-    g_ClientNetMgr = CClientNetMgr::instance();
+
+    g_clientNetPool = new CNetObjPool(MAX_CLIENT_SRV_CNT);
+    g_socksNetPool = new CNetObjPool(MAX_SOCKS_SRV_CNT);
+
+    g_SocksSrvMgr = new CSocksSrvMgr();
+    g_ClientNetMgr = new CClientNetMgr();
+
     g_webApi = CWebApiRelay::instance(g_relay_url);
     g_SrvCfgMgr = CServCfgMgr::instance();
 

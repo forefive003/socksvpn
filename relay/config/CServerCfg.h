@@ -18,15 +18,16 @@ public:
 
     int add_server_cfg(CServerCfg *srvCfg);
     void del_server_cfg(char *sn);
+    int get_server_cfg(char *sn, CServerCfg* srvCfg);
 
-    int server_online_handle(char *sn, char *pub_ip, char *pri_ip, CServerCfg *srvCfg);
-    void server_offline_handle(char *sn, char *pub_ip, char *pri_ip);
+    int set_server_online(char *sn, char *pub_ip, char *pri_ip);
+    void set_server_offline(char *sn, char *pub_ip, char *pri_ip);
     
     void server_post_keepalive();
     
 private:
     CServerCfg* find_server_cfg(char *sn);
-    CServerCfg* add_server_cfg_by_pkt(char *sn, char *pub_ip, char *pri_ip);
+    int add_server_cfg_by_pkt(char *sn, char *pub_ip, char *pri_ip);
 
 private:
     MUTEX_TYPE m_obj_lock;

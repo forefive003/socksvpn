@@ -17,6 +17,21 @@
 
 CLocalServerPool *g_localSrvPool = NULL;
 
+void CLocalServerPool::print_statistic(FILE* pFd)
+{
+	for (int ii = 0; ii < m_max_conn_cnt; ii++)
+	{
+		this->lock_index(ii);
+
+		if (m_conns_array[ii].connObj != NULL)
+		{
+			((CLocalServer*)m_conns_array[ii].connObj)->print_statistic(pFd);
+		}
+
+		this->unlock_index(ii);
+	}
+}
+
 void CLocalServerPool::status_check()
 {
 	for (int ii = 0; ii < m_max_conn_cnt; ii++)
@@ -32,8 +47,16 @@ void CLocalServerPool::status_check()
 	        }
 	        else
 	        {
-				localSrv->set_self_pool_index(ii);
-	        	this->add_conn_obj(ii, (CNetRecv*)localSrv);
+	        	int index = this->add_conn_obj((CNetRecv*)localSrv);
+	        	if (-1 == index)
+	        	{
+	        		_LOG_ERROR("fail to add new conn obj, index %d", ii);
+	        		delete rmtSrv;
+	        	}
+	        	else
+	        	{
+	        		localSrv->set_self_pool_index(index);
+	        	}
 	        }
 		}
 		else

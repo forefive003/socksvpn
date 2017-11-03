@@ -1,14 +1,13 @@
-#ifndef _RMTSRV_CONN_POOL_H
-#define _RMTSRV_CONN_POOL_H
+#ifndef _NETOBJ_POOL_H
+#define _NETOBJ_POOL_H
 
 #include "CConnPool.h"
 
-class CRemoteServerPool : public CConnPool
+class CNetObjPool : public CConnPool
 {
 public:
-	CRemoteServerPool(int maxConnCnt) : CConnPool(maxConnCnt)
+	CNetObjPool(int maxConnCnt) : CConnPool(maxConnCnt)
 	{
-		m_cur_index = 0;
 		m_session_cnt = new int[maxConnCnt];
 
 		for (int ii = 0; ii<maxConnCnt; ii++)
@@ -17,18 +16,12 @@ public:
 		}
 	}
 
-	virtual ~CRemoteServerPool()
+	virtual ~CNetObjPool()
     {
     	delete []m_session_cnt;
     }
 
-public:
-	void status_check();/*if not connected, try it; if not auth try it also*/
-	void let_re_auth(); /*server changed, re auth*/
-
-	int get_active_conn_obj();
-	void print_statistic(FILE* pFd);
-
+public:	
 	void index_session_inc(int index)
 	{
 		this->lock_index(index);
@@ -47,10 +40,10 @@ public:
 	}
 
 private:
-	int m_cur_index;
 	int *m_session_cnt;
 };
 
-extern CRemoteServerPool *g_remoteSrvPool;
+extern CNetObjPool *g_clientNetPool;
+extern CNetObjPool *g_socksNetPool;
 
 #endif

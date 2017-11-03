@@ -7,15 +7,17 @@
 class CClient : public CBaseClient
 {
 public:
-    CClient(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection *owner) : CBaseClient(ipaddr, port, fd, owner)
+    CClient(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection *owner, int srv_index) : CBaseClient(ipaddr, port, fd, owner)
     {
-        m_inner_ipaddr = 0;
+        m_client_srv_index = srv_index;
+        g_clientNetPool->index_session_inc(m_client_srv_index);
 
         g_total_connect_req_cnt++;
         m_request_time = util_get_cur_time();
     }
     virtual ~CClient()
     {
+        g_clientNetPool->index_session_dec(m_client_srv_index);
     }
     
 public:
@@ -39,6 +41,7 @@ public:
 
 private:
     uint64_t m_request_time;
+    int m_client_srv_index;
 };
 
 #endif

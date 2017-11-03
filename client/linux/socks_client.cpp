@@ -284,6 +284,9 @@ static void print_statistic()
     print_global_statistic(pFd);
     g_ConnMgr->print_statistic(pFd, true);
 
+    fprintf(pFd, "SRVPOOL-STAT:\n");
+    g_remoteSrvPool->print_statisc(pFd);
+
     fclose(pFd);
     return;
 }
@@ -338,6 +341,8 @@ int main(int argc, char **argv)
 	}
 
 	g_ConnMgr = CConnMgr::instance();
+	g_remoteSrvPool = new CRemoteServerPool(MAX_REMOTE_SRV_CNT);
+    g_remoteSrvPool->init();
 
 	g_LocalServ = CLocalServer::instance(proxy_cfg.local_port);
 	if(OK != g_LocalServ->init())

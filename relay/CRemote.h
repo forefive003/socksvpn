@@ -8,12 +8,14 @@
 class CRemote : public CBaseRemote
 {
 public:
-    CRemote(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection *owner) : CBaseRemote(ipaddr, port,fd, owner)
+    CRemote(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection *owner, int srv_index) : CBaseRemote(ipaddr, port,fd, owner)
     {
-        memset(m_username, 0, sizeof(m_username));
+        m_remote_srv_index = srv_index;
+        g_socksNetPool->index_session_inc(m_remote_srv_index);
     }
     virtual ~CRemote()
     {
+        g_socksNetPool->index_session_dec(m_remote_srv_index);
     }
 
 public:
@@ -35,11 +37,9 @@ public:
     int send_client_connect_msg(char *buf, int buf_len);
     int send_data_msg(char *buf, int buf_len);
 
-    void set_username(char *username);
 private:
 	/*用于查找socket连接*/
-	char m_username[MAX_USERNAME_LEN + 1];
+    int m_remote_srv_index;
 };
-
 
 #endif

@@ -26,6 +26,8 @@ public:
     BOOL is_authed();
     void reset_authed();
     
+    void print_statistic(FILE* pFd);
+    
 private:
     int pdu_handle(char *pdu_buf, int pdu_len);
 

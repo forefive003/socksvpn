@@ -11,6 +11,11 @@
 #include "CServerCfg.h"
 #include "CWebApi.h"
 
+void CSocksSrv::set_self_pool_index(int index)
+{
+    m_self_pool_index = index;
+}
+
 int CSocksSrv::msg_srv_reg_handle(char *data_buf, int data_len)
 {
     PKT_SRV_REG_T *srvReg = (PKT_SRV_REG_T*)data_buf;
@@ -27,31 +32,27 @@ int CSocksSrv::msg_srv_reg_handle(char *data_buf, int data_len)
         if (NULL == socksSrv)
         {
             g_SocksSrvMgr->unlock();
-            _LOG_ERROR("fail to find socksserver by 0x%x, localip 0x%x", m_ipaddr, srvReg->local_ip);
+            _LOG_ERROR("fail to find socksserver by 0x%x, localip 0x%x when recv alive", m_ipaddr, srvReg->local_ip);
             return -1;
         }
-
-        _LOG_DEBUG("update keepalive for socksserver 0x%x, localip 0x%x", m_ipaddr, srvReg->local_ip);
         g_SocksSrvMgr->unlock();
+
+        _LOG_DEBUG("update keepalive for socksserver 0x%x, localip 0x%x", m_ipaddr, srvReg->local_ip);        
     }
     else
     {
         _LOG_INFO("recv reg from socksserver 0x%x, inner ip 0x%x", m_ipaddr, srvReg->local_ip);
 
-        g_SocksSrvMgr->lock();
-        socksSrv = g_SocksSrvMgr->get_socks_server_by_innnerip(m_ipaddr, srvReg->local_ip);
-        if (NULL != socksSrv)
-        {
-            g_SocksSrvMgr->unlock();
-            _LOG_WARN("socksserver 0x%x, localip 0x%x alreay exist", m_ipaddr, srvReg->local_ip);
-            return 0;
-        }
-        g_SocksSrvMgr->unlock();
-
         this->set_inner_info(srvReg->local_ip, srvReg->local_port);
 
         /*上线处理*/
-        g_SrvCfgMgr->server_online_handle(srvReg->sn, m_ipstr, m_inner_ipstr, &this->m_srvCfg);
+        g_SrvCfgMgr->set_server_online(srvReg->sn, m_ipstr, m_inner_ipstr);
+        /*获取配置*/
+        g_SrvCfgMgr->get_server_cfg(srvReg->sn, &this->m_srvCfg);
+
+        /*添加到管理集合中*/
+        ///TODO:是否需要判断已经存在???
+        g_SocksSrvMgr->add_netobj(m_self_pool_index, m_ipaddr, m_inner_ipaddr, &this->m_srvCfg);
     }
 
     this->m_update_time = util_get_cur_time();
@@ -282,10 +283,12 @@ int CSocksSrv::recv_handle(char *buf, int buf_len)
 
 void CSocksSrv::free_handle()
 {
-    /*下线处理*/
-    g_SrvCfgMgr->server_offline_handle(m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
-    
-    g_SocksSrvMgr->del_socks_server(this);
+    /*从管理中删除*/
+    g_SocksSrvMgr->del_netobj(m_self_pool_index, m_ipaddr, m_inner_ipstr);
+
+    /*从连接池中删除*/
+    g_socksNetPool->del_conn_obj(m_self_pool_index);
+
     delete this;
 }
 

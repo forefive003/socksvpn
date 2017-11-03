@@ -9,10 +9,15 @@
 #include "CClient.h"
 #include "CRemote.h"
 #include "CClientNet.h"
+#include "CClientNetSet.h"
 #include "CClientNetMgr.h"
 #include "socks_relay.h"
 #include "CSocksSrvMgr.h"
 
+void CClientNet::set_self_pool_index(int index)
+{
+    m_self_pool_index = index;
+}
 
 int CClientNet::send_auth_result_msg(BOOL auth_ok)
 {
@@ -29,7 +34,7 @@ int CClientNet::send_auth_result_msg(BOOL auth_ok)
     }
 
     int srv_ip_array[32] = {0};
-    int srvs_cnt = g_SocksSrvMgr->get_srv_ip_array(srv_ip_array);
+    int srvs_cnt = g_SocksSrvMgr->get_running_socks_servers(srv_ip_array);
     if (srvs_cnt > 32) srvs_cnt = 32;
 
     int *ptmp = (int*)&resp_buf[2];
@@ -210,31 +215,39 @@ int CClientNet::msg_auth_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_
     }
     memcpy(passwd, &pass_pos[1], pass_pos[0]);
 
-    CSocksSrv* sockSrv = NULL;
+    CSocksNetSet *socksSetNet = NULL;
+
     g_SocksSrvMgr->lock();
-    sockSrv = g_SocksSrvMgr->get_socks_server_by_user(c2rhdr->server_ip, username);
-    if (NULL == sockSrv)
+    socksSetNet = g_SocksSrvMgr->get_socks_server_by_auth(c2rhdr->server_ip, username, passwd);
+    if (NULL == socksSetNet)
     {
         g_SocksSrvMgr->unlock();
 
         char ipstr[64] = { 0 };
         engine_ipv4_to_str(htonl(c2rhdr->server_ip), ipstr);
-        _LOG_ERROR("no server with user %s has registered on serverip %s", username, ipstr);
+        _LOG_ERROR("no server with user %s has registered on pub ipaddr %s", username, ipstr);
 
         /*response to client, auth failed*/
         this->send_auth_result_msg(FALSE);
         m_is_authed = FALSE;
         return -1;
     }
+
+    /*set pub ip and private ip for the socks server of this client channel*/
+    m_srv_pub_ipaddr = socksSetNet->m_ipaddr;
+    m_srv_private_ipaddr = socksSetNet->m_private_ipaddr;
     g_SocksSrvMgr->unlock();
 
-    _LOG_INFO("client(%s) auth ok.", m_ipstr);
     /*response to client, auth success*/
     this->send_auth_result_msg(TRUE);
     this->m_is_authed = TRUE;
-    this->set_user_passwd(username, passwd);
     /*set inner info*/
     this->set_inner_info(c2rhdr->client_ip, c2rhdr->client_port);
+
+    /*add to set*/
+    g_ClientNetMgr->add_netobj(m_self_pool_index, m_ipaddr, m_inner_ipaddr);
+
+    _LOG_INFO("client(%s/%s) auth ok.", m_ipstr, m_inner_ipstr);
     return 0;
 }
 
@@ -256,7 +269,7 @@ int CClientNet::msg_connect_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int da
     g_ConnMgr->add_conn(pConn);
 
     /*create client, clientip is private addr*/
-    CClient *pClient = new CClient(m_ipaddr, m_port, -1, pConn);
+    CClient *pClient = new CClient(m_ipaddr, m_port, -1, pConn, m_self_pool_index);
     g_total_client_cnt++;
     pClient->set_inner_info(c2rhdr->client_ip, c2rhdr->client_port);
     pConn->attach_client(pClient);
@@ -271,8 +284,19 @@ int CClientNet::msg_connect_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int da
     }    
 
     /*create remote, serverip is public addr*/
-    CRemote *pRemote = new CRemote(c2rhdr->server_ip, c2rhdr->server_port, -1, pConn);
-    g_total_remote_cnt++;
+    int remotePoolIndex = g_SocksSrvMgr->get_active_socks_server(this->m_srv_pub_ipaddr, this->m_srv_private_ipaddr);
+    if (-1 == remotePoolIndex)
+    {
+        _LOG_WARN("fail to get active server conn obj for pub 0x%x, pri 0x%x", 
+            this->m_srv_pub_ipaddr, this->m_srv_private_ipaddr);
+        pConn->detach_client();
+        g_ConnMgr->del_conn(pConn);
+        delete pClient;
+        delete pConn;
+        return -1;
+    }
+
+    CRemote *pRemote = new CRemote(c2rhdr->server_ip, c2rhdr->server_port, -1, pConn, remotePoolIndex);    
     pRemote->set_username(m_username);
     pConn->attach_remote(pRemote);
 
@@ -284,9 +308,8 @@ int CClientNet::msg_connect_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int da
         return -1;
     }
     
-
-    //parse_connect_req_msg(data_buf, data_len);
-    
+    g_total_remote_cnt++;
+    //parse_connect_req_msg(data_buf, data_len);    
     return pConn->fwd_client_connect_msg(data_buf, data_len);
 }
 
@@ -469,7 +492,10 @@ void CClientNet::free_handle()
     //g_ConnMgr->free_all_conn();
     
     /*从管理中删除*/
-    g_ClientNetMgr->del_client_server(this);
+    g_ClientNetMgr->del_netobj(m_self_pool_index, m_ipaddr, m_inner_ipstr);
+
+    /*从连接池中删除*/
+    g_clientNetPool->del_conn_obj(m_self_pool_index);
     delete this;
 }
 

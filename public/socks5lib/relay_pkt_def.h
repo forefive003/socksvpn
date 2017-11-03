@@ -54,7 +54,7 @@ enum pkt_sub_type_e{
 typedef struct _pkt_c2r_
 {
 	uint32_t server_ip;
-	uint32_t client_ip; /*not used*/
+	uint32_t client_ip; /*private ipaddr*/
 	uint16_t server_port;
 	uint16_t client_port;
 	uint16_t sub_type;

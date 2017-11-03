@@ -24,13 +24,21 @@ int CRemoteServer::accept_handle(int conn_fd, uint32_t client_ip, uint16_t clien
 	setsockopt(conn_fd, SOL_TCP, TCP_KEEPCNT, (void *)&keepcount , sizeof(keepcount ));
 
 	CSocksSrv *sockSrv = new CSocksSrv(client_ip, client_port, conn_fd);
-//	sockSrv->init_async_write_resource(socks_malloc, socks_free);
+	int index = g_socksNetPool->add_conn_obj((CNetRecv*)sockSrv);
+    if (-1 == index)
+    {
+        _LOG_ERROR("fail to add new conn obj for socks server");
+        delete sockSrv;
+        return -1;
+    }
+    sockSrv->set_self_pool_index(index);
+
     if (0 != sockSrv->init())
     {
+    	g_socksNetPool->del_conn_obj(index);
         delete sockSrv;
         return -1;
     }
     
-    g_SocksSrvMgr->add_socks_server(sockSrv);
     return 0;
 }

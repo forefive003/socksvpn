@@ -2,6 +2,9 @@
 #define _SOCKS5_RELAY_H
 
 
+#define MAX_SOCKS_SRV_CNT  1024
+#define MAX_CLIENT_SRV_CNT  1024
+
 #define  MAX_URL_LEN 256
 
 BOOL is_relay_need_platform();

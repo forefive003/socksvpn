@@ -65,7 +65,7 @@ void CServCfgMgr::server_post_keepalive()
     return;
 }
 
-void CServCfgMgr::server_offline_handle(char *sn, char *pub_ip, char *pri_ip)
+void CServCfgMgr::set_server_offline(char *sn, char *pub_ip, char *pri_ip)
 {
     if (is_relay_need_platform() == false)
     {
@@ -99,14 +99,6 @@ void CServCfgMgr::server_offline_handle(char *sn, char *pub_ip, char *pri_ip)
                 /*设置离线*/
                 tmp_srvCfg->set_online(FALSE);
             }
-
-#if 0
-            /*通知平台*/
-            if(0 != g_webApi->postServerOnline(g_relaysn, srvCfg->m_sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip, FALSE))
-            {
-                _LOG_WARN("socksserver %s, localip %s failed to post platform", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
-            }
-#endif
             break;
         }
     }
@@ -120,7 +112,7 @@ void CServCfgMgr::server_offline_handle(char *sn, char *pub_ip, char *pri_ip)
     return;
 }
 
-int CServCfgMgr::server_online_handle(char *sn, char *pub_ip, char *pri_ip, CServerCfg *srvCfg)
+int CServCfgMgr::set_server_online(char *sn, char *pub_ip, char *pri_ip)
 {
     if (is_relay_need_platform() == false)
     {
@@ -154,19 +146,36 @@ int CServCfgMgr::server_online_handle(char *sn, char *pub_ip, char *pri_ip, CSer
     {
         _LOG_WARN("server(sn %s) has no server config when online",sn);
         /*添加一个配置*/
-        tmp_srvCfg = add_server_cfg_by_pkt(sn, pub_ip, pri_ip);
-        /*拷贝配置*/
-        *srvCfg = *tmp_srvCfg;
+        this->add_server_cfg_by_pkt(sn, pub_ip, pri_ip);
     }
     MUTEX_UNLOCK(m_obj_lock);
-
-    /*通知平台*/
-    if(0 != g_webApi->postServerOnline(g_relaysn, srvCfg->m_sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip, TRUE))
-    {
-        _LOG_WARN("socksserver %s, localip %s failed to post platform", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
-    }
     return 0;
 }
+
+int CServCfgMgr::get_server_cfg(char *sn, CServerCfg* srvCfg)
+{
+    CSERVCFG_LIST_Itr itr;
+    CServerCfg *tmpSrvCfg = NULL;
+
+    MUTEX_LOCK(m_obj_lock);
+
+    for (itr = m_objs.begin();
+            itr != m_objs.end();
+            itr++)
+    {
+        tmpSrvCfg = *itr;
+        if (tmpSrvCfg->is_self(sn))
+        {
+            *srvCfg = tmpSrvCfg;
+            MUTEX_UNLOCK(m_obj_lock);
+            return 0;
+        }
+    }
+
+    MUTEX_UNLOCK(m_obj_lock);
+    return -1;
+}
+
 
 CServerCfg* CServCfgMgr::find_server_cfg(char *sn)
 {
@@ -187,7 +196,7 @@ CServerCfg* CServCfgMgr::find_server_cfg(char *sn)
 }
 
 /*在锁内调用*/
-CServerCfg* CServCfgMgr::add_server_cfg_by_pkt(char *sn, char *pub_ip, char *pri_ip)
+void CServCfgMgr::add_server_cfg_by_pkt(char *sn, char *pub_ip, char *pri_ip)
 {
     _LOG_INFO("add new server cfg by pkt: SN %s, pubip %s, priip %s", 
         sn, pub_ip, pri_ip);
@@ -199,7 +208,7 @@ CServerCfg* CServCfgMgr::add_server_cfg_by_pkt(char *sn, char *pub_ip, char *pri
     tmp_srvCfg->set_created_pkt_flag(true);
     tmp_srvCfg->set_sn_and_ip(sn, pub_ip, pri_ip);
 
-    return tmp_srvCfg;
+    return;
 }
 
 int CServCfgMgr::add_server_cfg(CServerCfg *srvCfg)
@@ -228,17 +237,17 @@ int CServCfgMgr::add_server_cfg(CServerCfg *srvCfg)
     tmp_srvCfg->m_acct_cnt = srvCfg->m_acct_cnt;
     memcpy(tmp_srvCfg->m_acct_infos, srvCfg->m_acct_infos, sizeof(srvCfg->m_acct_infos));
 
-    /*找到SocksSrv, 下发配置*/
-    CSocksSrv *socksSrv = NULL;
+    /*找到SocksSrvSet, 下发配置*/
+    CSocksNetSet *socksNetSet = NULL;
     g_SocksSrvMgr->lock();
-    socksSrv = g_SocksSrvMgr->get_socks_server_by_innnerip(tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
-    if (NULL == socksSrv)
+    socksNetSet = (CSocksNetSet*)g_SocksSrvMgr->get_netobj_set(tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
+    if (NULL == socksNetSet)
     {
         _LOG_WARN("socksserver %s(%s) not exist", tmp_srvCfg->m_pub_ip, tmp_srvCfg->m_pri_ip);
     }
     else
     {
-        socksSrv->set_config(tmp_srvCfg);
+        socksNetSet->set_srv_cfg(tmp_srvCfg);
         /*设置在线*/
         tmp_srvCfg->set_online(TRUE);
     }
@@ -269,18 +278,18 @@ void CServCfgMgr::del_server_cfg(char *sn)
     MUTEX_UNLOCK(m_obj_lock);
     delete tmp_srvCfg;
 
-    /*通知server 关闭已有服务*/
-    CSocksSrv *socksSrv = NULL;
+    /*通知server set关闭已有服务*/
+    CSocksNetSet *socksNetSet = NULL;
     g_SocksSrvMgr->lock();
-    socksSrv = g_SocksSrvMgr->get_socks_server_by_innnerip(srvCfg.m_pub_ip, srvCfg.m_pri_ip);
-    if (NULL == socksSrv)
+    socksNetSet = (CSocksNetSet*)g_SocksSrvMgr->get_netobj_set(srvCfg.m_pub_ip, srvCfg.m_pri_ip);
+    if (NULL == socksNetSet)
     {
         _LOG_WARN("socksserver %s(%s) not exist", srvCfg.m_pub_ip, srvCfg.m_pri_ip);
     }
     else
     {
         /*关闭连接*/
-        socksSrv->free();
+        socksNetSet->close_all_socks_server();
     }
     g_SocksSrvMgr->unlock();
 

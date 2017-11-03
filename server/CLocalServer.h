@@ -34,6 +34,8 @@ public:
     int send_keepalive();
     void set_self_pool_index(int index);
 
+    void print_statistic(FILE* pFd);
+    
 private:
     int msg_request_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len);
     int msg_client_close_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len);

@@ -11,17 +11,7 @@
 int CRemote::send_client_close_msg()
 {
     CConnection *pConn = (CConnection*)this->m_owner_conn;
-
     CSocksSrv *socksSrv = NULL;
-
-    g_SocksSrvMgr->lock();
-    socksSrv = g_SocksSrvMgr->get_socks_server_by_user(m_ipaddr, m_username);
-    if (NULL == socksSrv)
-    {
-        g_SocksSrvMgr->unlock();
-        _LOG_ERROR("fail to find socksserver by 0x%x, username %s", m_ipaddr, m_username);
-        return -1;
-    }
 
     PKT_HDR_T pkthdr;
     PKT_R2S_HDR_T r2shdr;
@@ -40,18 +30,26 @@ int CRemote::send_client_close_msg()
     r2shdr.sub_type = CLIENT_CLOSED;
     PKT_R2S_HDR_HTON(&r2shdr);
 
+    g_socksNetPool->lock_index(m_remote_srv_index);
+    socksSrv = g_socksNetPool->get_conn_obj(m_remote_srv_index);
+    if (NULL == socksSrv)
+    {
+        g_socksNetPool->unlock_index(m_remote_srv_index);
+        _LOG_WARN("fail to find socks server by %s/%u, fd %d", m_ipstr, m_port, m_fd);
+        return -1;
+    }
     if(0 != socksSrv->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
-        g_SocksSrvMgr->unlock();
+        g_socksNetPool->unlock_index(m_remote_srv_index);
         return -1;
     }
     if(0 != socksSrv->send_data((char*)&r2shdr, sizeof(PKT_R2S_HDR_T)))
     {
-        g_SocksSrvMgr->unlock();
+        g_socksNetPool->unlock_index(m_remote_srv_index);
         return -1;
     }
     socksSrv->m_send_client_close_cnt++;
-    g_SocksSrvMgr->unlock();
+    g_socksNetPool->unlock_index(m_remote_srv_index);
 
     _LOG_INFO("client(0x%x/%u/0x%x/%u/fd%d) send client close msg",
         pConn->get_client_ipaddr(), pConn->get_client_port(), 
@@ -65,18 +63,6 @@ int CRemote::send_client_connect_msg(char *buf, int buf_len)
 {
     CConnection *pConn = (CConnection*)this->m_owner_conn;
     CSocksSrv *socksSrv = NULL;
-
-    g_SocksSrvMgr->lock();
-    socksSrv = g_SocksSrvMgr->get_socks_server_by_user(m_ipaddr, m_username);
-    if (NULL == socksSrv)
-    {
-        g_SocksSrvMgr->unlock();
-        _LOG_ERROR("fail to find socksserver by 0x%x, username %s when send client connect msg", m_ipaddr, m_username);
-        
-        /*notify client that remote already closed*/
-        pConn->notify_remote_close();
-        return -1;
-    }
 
     PKT_HDR_T pkthdr;
     PKT_R2S_HDR_T r2shdr;
@@ -95,23 +81,35 @@ int CRemote::send_client_connect_msg(char *buf, int buf_len)
     r2shdr.sub_type = R2S_CLIENT_CONNECT;
     PKT_R2S_HDR_HTON(&r2shdr);
 
+    g_socksNetPool->lock_index(m_remote_srv_index);
+    socksSrv = g_socksNetPool->get_conn_obj(m_remote_srv_index);
+    if (NULL == socksSrv)
+    {
+        g_socksNetPool->unlock_index(m_remote_srv_index);
+        _LOG_WARN("fail to find socks server by %s/%u, fd %d when send client connect msg", m_ipstr, m_port, m_fd);
+        
+        /*notify client that remote already closed*/
+        pConn->notify_remote_close();
+        return -1;
+    }
+
     if(0 != socksSrv->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
-        g_SocksSrvMgr->unlock();
+        g_socksNetPool->unlock_index(m_remote_srv_index);
         return -1;
     }
     if(0 != socksSrv->send_data((char*)&r2shdr, sizeof(PKT_R2S_HDR_T)))
     {
-        g_SocksSrvMgr->unlock();
+        g_socksNetPool->unlock_index(m_remote_srv_index);
         return -1;
     }
     if(0 != socksSrv->send_data(buf, buf_len))
     {
-        g_SocksSrvMgr->unlock();
+        g_socksNetPool->unlock_index(m_remote_srv_index);
         return -1;
     }
     socksSrv->m_send_client_connect_cnt++;
-    g_SocksSrvMgr->unlock();    
+    g_socksNetPool->unlock_index(m_remote_srv_index);   
 
     _LOG_INFO("client(0x%x/%u/0x%x/%u/fd%d) send connect msg to remote, use fd %d",
         pConn->get_client_ipaddr(), pConn->get_client_port(), 
@@ -125,18 +123,6 @@ int CRemote::send_data_msg(char *buf, int buf_len)
 {
     CConnection *pConn = (CConnection*)this->m_owner_conn;
     CSocksSrv *socksSrv = NULL;
-
-    g_SocksSrvMgr->lock();
-    socksSrv = g_SocksSrvMgr->get_socks_server_by_user(m_ipaddr, m_username);
-    if (NULL == socksSrv)
-    {
-        g_SocksSrvMgr->unlock();
-        _LOG_ERROR("fail to find socksserver by 0x%x, username %s", m_ipaddr, m_username);
-
-        /*notify client that remote already closed*/
-        pConn->notify_remote_close();
-        return -1;
-    }
 
     PKT_HDR_T pkthdr;
     PKT_R2S_HDR_T r2shdr;
@@ -155,28 +141,35 @@ int CRemote::send_data_msg(char *buf, int buf_len)
     r2shdr.sub_type = R2S_DATA;
     PKT_R2S_HDR_HTON(&r2shdr);
 
+    g_socksNetPool->lock_index(m_remote_srv_index);
+    socksSrv = g_socksNetPool->get_conn_obj(m_remote_srv_index);
+    if (NULL == socksSrv)
+    {
+        g_socksNetPool->unlock_index(m_remote_srv_index);
+        _LOG_WARN("fail to find socks server by %s/%u, fd %d", m_ipstr, m_port, m_fd);
+        
+        /*notify client that remote already closed*/
+        pConn->notify_remote_close();
+        return -1;
+    }
+
     if(0 != socksSrv->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
-        g_SocksSrvMgr->unlock();
+        g_socksNetPool->unlock_index(m_remote_srv_index);
         return -1;
     }
     if(0 != socksSrv->send_data((char*)&r2shdr, sizeof(PKT_R2S_HDR_T)))
     {
-        g_SocksSrvMgr->unlock();
+        g_socksNetPool->unlock_index(m_remote_srv_index);
         return -1;
     }
     if(0 != socksSrv->send_data(buf, buf_len))
     {
-        g_SocksSrvMgr->unlock();
+        g_socksNetPool->unlock_index(m_remote_srv_index);
         return -1;
     }
     socksSrv->m_send_data_cnt++;
-    g_SocksSrvMgr->unlock();
-    return 0;
-}
+    g_socksNetPool->unlock_index(m_remote_srv_index);
 
-void CRemote::set_username(char *username)
-{
-    memset(m_username, 0, sizeof(m_username));
-    strncpy(m_username, username, MAX_USERNAME_LEN);
+    return 0;
 }
