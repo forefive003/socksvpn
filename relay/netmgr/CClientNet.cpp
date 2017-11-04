@@ -9,10 +9,12 @@
 #include "CClient.h"
 #include "CRemote.h"
 #include "CClientNet.h"
-#include "CClientNetSet.h"
-#include "CClientNetMgr.h"
+
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
+
 #include "socks_relay.h"
-#include "CSocksSrvMgr.h"
 
 void CClientNet::set_self_pool_index(int index)
 {
@@ -34,8 +36,11 @@ int CClientNet::send_auth_result_msg(BOOL auth_ok)
     }
 
     int srv_ip_array[32] = {0};
-    int srvs_cnt = g_SocksSrvMgr->get_running_socks_servers(srv_ip_array);
-    if (srvs_cnt > 32) srvs_cnt = 32;
+    int srvs_cnt = g_SocksSrvMgr->get_running_socks_servers(m_srv_pub_ipaddr, m_srv_private_ipaddr, srv_ip_array);
+    if (srvs_cnt > 32) 
+    {
+        srvs_cnt = 32;
+    }
 
     int *ptmp = (int*)&resp_buf[2];
     *ptmp = htonl(srvs_cnt);
@@ -68,19 +73,24 @@ int CClientNet::send_auth_result_msg(BOOL auth_ok)
 
     PKT_R2C_HDR_HTON(&r2chdr);
 
+    g_clientNetPool->lock_index(m_self_pool_index);
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
+        g_clientNetPool->unlock_index(m_self_pool_index);
         return -1;
     }
     if(0 != this->send_data((char*)&r2chdr, sizeof(PKT_R2C_HDR_T)))
     {
+        g_clientNetPool->unlock_index(m_self_pool_index);
         return -1;
     }
     if(0 != this->send_data(resp_buf, resp_len))
     {
+        g_clientNetPool->unlock_index(m_self_pool_index);
         return -1;
     }
 
+    g_clientNetPool->unlock_index(m_self_pool_index);
     _LOG_INFO("client(%s) send auth result msg", m_ipstr);
     return 0;
 }
@@ -218,7 +228,7 @@ int CClientNet::msg_auth_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_
     CSocksNetSet *socksSetNet = NULL;
 
     g_SocksSrvMgr->lock();
-    socksSetNet = g_SocksSrvMgr->get_socks_server_by_auth(c2rhdr->server_ip, username, passwd);
+    socksSetNet = (CSocksNetSet*)g_SocksSrvMgr->get_socks_server_by_auth(c2rhdr->server_ip, username, passwd);
     if (NULL == socksSetNet)
     {
         g_SocksSrvMgr->unlock();
@@ -296,8 +306,7 @@ int CClientNet::msg_connect_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int da
         return -1;
     }
 
-    CRemote *pRemote = new CRemote(c2rhdr->server_ip, c2rhdr->server_port, -1, pConn, remotePoolIndex);    
-    pRemote->set_username(m_username);
+    CRemote *pRemote = new CRemote(c2rhdr->server_ip, c2rhdr->server_port, -1, pConn, remotePoolIndex);
     pConn->attach_remote(pRemote);
 
     if (0 != pRemote->init())
@@ -492,7 +501,7 @@ void CClientNet::free_handle()
     //g_ConnMgr->free_all_conn();
     
     /*从管理中删除*/
-    g_ClientNetMgr->del_netobj(m_self_pool_index, m_ipaddr, m_inner_ipstr);
+    g_ClientNetMgr->del_netobj(m_self_pool_index, m_ipaddr, m_inner_ipaddr);
 
     /*从连接池中删除*/
     g_clientNetPool->del_conn_obj(m_self_pool_index);
@@ -520,15 +529,6 @@ void CClientNet::set_inner_info(uint32_t inner_ipaddr, uint16_t inner_port)
 
     _LOG_INFO("set clientSrv(%s/%u) inner info: %s/%u", m_ipstr, m_port,
         m_inner_ipstr, m_inner_port);
-}
-
-void CClientNet::set_user_passwd(char *username, char *passwd)
-{
-    memset(m_username, 0, sizeof(m_username));
-    strncpy(m_username, username, MAX_USERNAME_LEN);
-
-    memset(m_passwd, 0, sizeof(m_passwd));
-    strncpy(m_passwd, passwd, MAX_PASSWD_LEN);
 }
 
 void CClientNet::print_statistic(FILE *pFd)

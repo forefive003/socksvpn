@@ -39,8 +39,6 @@ public:
         return -1;
     }
 public:
-    int send_data(char *buf, int buf_len);
-
     int send_data_msg(char *buf, int buf_len);
     int send_connect_result(BOOL result);
     int send_remote_close_msg();

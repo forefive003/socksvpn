@@ -9,10 +9,12 @@
 #include "CClient.h"
 #include "CRemote.h"
 #include "CClientNet.h"
+
 #include "CNetObjPool.h"
-#include "CClientNetMgr.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
+
 #include "socks_relay.h"
-#include "CSocksSrvMgr.h"
 
 CNetObjPool *g_clientNetPool = NULL;
 CNetObjPool *g_socksNetPool = NULL;

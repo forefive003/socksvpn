@@ -7,8 +7,10 @@
 #include "common_def.h"
 #include "CRemoteServer.h"
 #include "CSocksSrv.h"
-#include "CSocksSrvMgr.h"
 #include "CSocksMem.h"
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
 
 CRemoteServer *g_RemoteServ = NULL;
 

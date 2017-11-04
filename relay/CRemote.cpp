@@ -6,7 +6,12 @@
 #include "CClient.h"
 #include "CRemote.h"
 #include "socks_relay.h"
-#include "CSocksSrvMgr.h"
+
+#include "CClientNet.h"
+#include "CSocksSrv.h"
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
 
 int CRemote::send_client_close_msg()
 {
@@ -31,7 +36,7 @@ int CRemote::send_client_close_msg()
     PKT_R2S_HDR_HTON(&r2shdr);
 
     g_socksNetPool->lock_index(m_remote_srv_index);
-    socksSrv = g_socksNetPool->get_conn_obj(m_remote_srv_index);
+    socksSrv = (CSocksSrv*)g_socksNetPool->get_conn_obj(m_remote_srv_index);
     if (NULL == socksSrv)
     {
         g_socksNetPool->unlock_index(m_remote_srv_index);
@@ -82,7 +87,7 @@ int CRemote::send_client_connect_msg(char *buf, int buf_len)
     PKT_R2S_HDR_HTON(&r2shdr);
 
     g_socksNetPool->lock_index(m_remote_srv_index);
-    socksSrv = g_socksNetPool->get_conn_obj(m_remote_srv_index);
+    socksSrv = (CSocksSrv*)g_socksNetPool->get_conn_obj(m_remote_srv_index);
     if (NULL == socksSrv)
     {
         g_socksNetPool->unlock_index(m_remote_srv_index);
@@ -142,7 +147,7 @@ int CRemote::send_data_msg(char *buf, int buf_len)
     PKT_R2S_HDR_HTON(&r2shdr);
 
     g_socksNetPool->lock_index(m_remote_srv_index);
-    socksSrv = g_socksNetPool->get_conn_obj(m_remote_srv_index);
+    socksSrv = (CSocksSrv*)g_socksNetPool->get_conn_obj(m_remote_srv_index);
     if (NULL == socksSrv)
     {
         g_socksNetPool->unlock_index(m_remote_srv_index);

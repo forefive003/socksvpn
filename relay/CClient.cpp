@@ -7,9 +7,11 @@
 #include "CClient.h"
 #include "CRemote.h"
 #include "CClientNet.h"
-#include "CClientNetMgr.h"
 #include "CSocksSrv.h"
-#include "CSocksSrvMgr.h"
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
+
 #include "socks_relay.h"
 #include "CWebApi.h"
 #include "relay_pkt_def.h"
@@ -24,7 +26,7 @@ int CClient::send_remote_close_msg()
     memset(&pkthdr, 0, sizeof(PKT_HDR_T));
     memset(&r2chdr, 0, sizeof(PKT_R2C_HDR_T));
 
-    CClientNet *clinetNet = NULL;
+    CClientNet *clientNet = NULL;
 
     pkthdr.pkt_type = PKT_R2C;
     pkthdr.pkt_len = sizeof(PKT_R2C_HDR_T);
@@ -39,25 +41,25 @@ int CClient::send_remote_close_msg()
     PKT_R2C_HDR_HTON(&r2chdr);
 
     g_clientNetPool->lock_index(m_client_srv_index);
-    clientNet = g_clientNetPool->get_conn_obj(m_client_srv_index);
+    clientNet = (CClientNet*)g_clientNetPool->get_conn_obj(m_client_srv_index);
     if (NULL == clientNet)
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         _LOG_WARN("fail to find clientserver by %s/%u when send connect result to client", m_ipstr, m_port);
         return -1;
     }
-    if(0 != clinetNet->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
+    if(0 != clientNet->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         return -1;
     }
-    if(0 != clinetNet->send_data((char*)&r2chdr, sizeof(PKT_R2C_HDR_T)))
+    if(0 != clientNet->send_data((char*)&r2chdr, sizeof(PKT_R2C_HDR_T)))
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         return -1;
     }
 
-    clinetNet->m_send_remote_close_cnt++;
+    clientNet->m_send_remote_close_cnt++;
     g_clientNetPool->unlock_index(m_client_srv_index);
 
     _LOG_INFO("client(%s/%u/%s/%u/fd%d) send remote close msg to client", 
@@ -82,7 +84,7 @@ int CClient::send_connect_result_msg(char *buf, int buf_len)
     memset(&pkthdr, 0, sizeof(PKT_HDR_T));
     memset(&r2chdr, 0, sizeof(PKT_R2C_HDR_T));
 
-    CClientNet *clinetNet = NULL;
+    CClientNet *clientNet = NULL;
 
     pkthdr.pkt_type = PKT_R2C;
     pkthdr.pkt_len = sizeof(PKT_R2C_HDR_T) + buf_len;
@@ -97,31 +99,31 @@ int CClient::send_connect_result_msg(char *buf, int buf_len)
     PKT_R2C_HDR_HTON(&r2chdr);
 
     g_clientNetPool->lock_index(m_client_srv_index);
-    clientNet = g_clientNetPool->get_conn_obj(m_client_srv_index);
-    if (NULL == clinetNet)
+    clientNet = (CClientNet*)g_clientNetPool->get_conn_obj(m_client_srv_index);
+    if (NULL == clientNet)
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         _LOG_WARN("fail to find clientserver by %s/%u when send connect result to client", m_ipstr, m_port);
         return -1;
     }
 
-    if(0 != clinetNet->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
+    if(0 != clientNet->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         return -1;
     }
-    if(0 != clinetNet->send_data((char*)&r2chdr, sizeof(PKT_R2C_HDR_T)))
+    if(0 != clientNet->send_data((char*)&r2chdr, sizeof(PKT_R2C_HDR_T)))
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         return -1;
     }
-    if(0 != clinetNet->send_data(buf, buf_len))
+    if(0 != clientNet->send_data(buf, buf_len))
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         return -1;
     }
 
-    clinetNet->m_send_connect_result_cnt++;
+    clientNet->m_send_connect_result_cnt++;
     g_clientNetPool->unlock_index(m_client_srv_index);
 
     _LOG_INFO("client(%s/%u/%s/%u/fd%d) send connect result msg to client",
@@ -140,7 +142,7 @@ int CClient::send_data_msg(char *buf, int buf_len)
     memset(&pkthdr, 0, sizeof(PKT_HDR_T));
     memset(&r2chdr, 0, sizeof(PKT_R2C_HDR_T));
 
-    CClientNet *clinetNet = NULL;
+    CClientNet *clientNet = NULL;
 
     pkthdr.pkt_type = PKT_R2C;
     pkthdr.pkt_len = sizeof(PKT_R2C_HDR_T) + buf_len;
@@ -155,31 +157,31 @@ int CClient::send_data_msg(char *buf, int buf_len)
     PKT_R2C_HDR_HTON(&r2chdr);
 
     g_clientNetPool->lock_index(m_client_srv_index);
-    clientNet = g_clientNetPool->get_conn_obj(m_client_srv_index);
-    if (NULL == clinetNet)
+    clientNet = (CClientNet*)g_clientNetPool->get_conn_obj(m_client_srv_index);
+    if (NULL == clientNet)
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         _LOG_WARN("fail to find clientserver by %s/%u when send data to client", m_ipstr, m_port);
         return -1;
     }
 
-    if(0 != clinetNet->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
+    if(0 != clientNet->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         return -1;
     }
-    if(0 != clinetNet->send_data((char*)&r2chdr, sizeof(PKT_R2C_HDR_T)))
+    if(0 != clientNet->send_data((char*)&r2chdr, sizeof(PKT_R2C_HDR_T)))
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         return -1;
     }
-    if(0 != clinetNet->send_data(buf, buf_len))
+    if(0 != clientNet->send_data(buf, buf_len))
     {
         g_clientNetPool->unlock_index(m_client_srv_index);
         return -1;
     }
 
-    clinetNet->m_send_data_cnt++;
+    clientNet->m_send_data_cnt++;
     g_clientNetPool->unlock_index(m_client_srv_index);
     
     return 0;

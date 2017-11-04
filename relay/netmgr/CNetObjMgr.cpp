@@ -4,12 +4,15 @@
 #include "relay_pkt_def.h"
 #include "CNetRecv.h"
 #include "CClientNet.h"
-#include "CClientNetSet.h"
-#include "CClientNetMgr.h"
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
+
 #include "socks_relay.h"
 
 
 CClientNetMgr *g_ClientNetMgr = NULL;
+CSocksNetMgr *g_SocksSrvMgr = NULL;
 
 CNetObjMgr::CNetObjMgr()
 {
@@ -68,13 +71,29 @@ CNetObjSet* CNetObjMgr::get_netobj_set(uint32_t pub_ipaddr, uint32_t private_ipa
     return NULL;
 }
 
+CNetObjSet* CNetObjMgr::get_netobj_set(char *pub_ipaddr_str, char *private_ipaddr_str)
+{
+    NETOBJ_SET_LIST_Itr itr;
+    CNetObjSet *serverSet = NULL;
+
+    for (itr = m_netset_objs.begin();
+            itr != m_netset_objs.end();
+            itr++)
+    {
+        serverSet = *itr;
+        if (serverSet->is_self(pub_ipaddr_str, private_ipaddr_str))
+        {
+            return serverSet;
+        }
+    }
+    return NULL;
+}
+
 void CNetObjMgr::aged_netobj()
 {
     NETOBJ_SET_LIST_Itr itr;
     CNetObjSet *netObjSet = NULL;
     
-    uint64_t cur_time = util_get_cur_time();
-
     MUTEX_LOCK(m_obj_lock);
     for (itr = m_netset_objs.begin();
             itr != m_netset_objs.end();
@@ -160,7 +179,7 @@ int CClientNetMgr::add_netobj(int index, uint32_t pub_ipaddr, uint32_t private_i
     return 0; 
 }
 
-int CSocksSrvMgr::add_netobj(int index, uint32_t pub_ipaddr, uint32_t private_ipaddr, CServerCfg *srvCfg)
+int CSocksNetMgr::add_netobj(int index, uint32_t pub_ipaddr, uint32_t private_ipaddr, CServerCfg *srvCfg)
 {
     this->lock();
 
@@ -181,13 +200,13 @@ int CSocksSrvMgr::add_netobj(int index, uint32_t pub_ipaddr, uint32_t private_ip
     return 0; 
 }
 
-int CSocksSrvMgr::get_running_socks_servers(uint32_t pub_ipaddr, uint32_t private_ipaddr,
+int CSocksNetMgr::get_running_socks_servers(uint32_t pub_ipaddr, uint32_t private_ipaddr,
                         int *serv_array)
 {
     int ret = 0;
 
     this->lock(); 
-    CSocksNetSet *socksNetSet = (CSocksSrvMgr*)this->get_netobj_set(pub_ipaddr, private_ipaddr);
+    CSocksNetSet *socksNetSet = (CSocksNetSet*)this->get_netobj_set(pub_ipaddr, private_ipaddr);
     if (NULL == socksNetSet)
     {
         this->unlock(); 
@@ -200,7 +219,7 @@ int CSocksSrvMgr::get_running_socks_servers(uint32_t pub_ipaddr, uint32_t privat
     return ret;
 }
 
-CNetObjSet* CSocksSrvMgr::get_socks_server_by_auth(uint32_t srv_pub_ipaddr, 
+CNetObjSet* CSocksNetMgr::get_socks_server_by_auth(uint32_t srv_pub_ipaddr, 
         const char *username, const char *passwd)
 {
     NETOBJ_SET_LIST_Itr itr;
@@ -226,16 +245,16 @@ CNetObjSet* CSocksSrvMgr::get_socks_server_by_auth(uint32_t srv_pub_ipaddr,
     return NULL;  
 }
 
-int CSocksSrvMgr::get_active_socks_server(uint32_t pub_ipaddr, uint32_t private_ipaddr)
+int CSocksNetMgr::get_active_socks_server(uint32_t pub_ipaddr, uint32_t private_ipaddr)
 {
     NETOBJ_SET_LIST_Itr itr;
-    CNetObjSet *serverSet = NULL;
+    CSocksNetSet *serverSet = NULL;
 
     for (itr = m_netset_objs.begin();
             itr != m_netset_objs.end();
             itr++)
     {
-        serverSet = *itr;
+        serverSet = (CSocksNetSet*)*itr;
         if (serverSet->is_self(pub_ipaddr, private_ipaddr))
         {
             return serverSet->get_active_socks_server();

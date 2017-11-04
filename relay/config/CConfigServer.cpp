@@ -8,7 +8,11 @@
 #include "common_def.h"
 #include "CConfigServer.h"
 #include "CSocksMem.h"
-#include "CSocksSrvMgr.h"
+
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
+
 #include "socks_relay.h"
 #include "CServerCfg.h"
 

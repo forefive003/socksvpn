@@ -36,6 +36,7 @@ public:
     void set_thrd_index(int thrd_index);
     BOOL is_connected();
     BOOL is_freeing();
+    BOOL is_send_busy();
     void set_async_write_flag(bool is_async);
 
     virtual int init();
@@ -95,9 +96,6 @@ private:
     bool m_is_register_write;
     bool m_is_freeing;
     bool m_is_pause_read;
-    bool m_is_fwd_server; /*whether forward data that recv by self to another fd,
-                        if yes, not pause read when local send busy, otherwith pause,
-                        default is true*/
 };
 
 #endif

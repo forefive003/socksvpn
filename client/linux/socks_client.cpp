@@ -285,7 +285,7 @@ static void print_statistic()
     g_ConnMgr->print_statistic(pFd, true);
 
     fprintf(pFd, "SRVPOOL-STAT:\n");
-    g_remoteSrvPool->print_statisc(pFd);
+    g_remoteSrvPool->print_statistic(pFd);
 
     fclose(pFd);
     return;
@@ -352,8 +352,6 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	MUTEX_SETUP(g_remote_srv_lock);
-
     /*start check timer*/
     np_add_time_job(_timer_callback, NULL, NULL, NULL, NULL, 1, FALSE);
 
@@ -364,7 +362,6 @@ int main(int argc, char **argv)
     }
 
 	np_wait_stop();
-	MUTEX_CLEANUP(g_remote_srv_lock);
 	loggger_exit();
 	return 0;
 }

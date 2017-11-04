@@ -1,6 +1,7 @@
 #ifndef _RELAY_REMOTE_H
 #define _RELAY_REMOTE_H
 
+#include "CNetObjPool.h"
 
 /*本类只是存放一下远端的ip, 没有其他作用
 发送报文实际调用的是CCSocksSrv的接口

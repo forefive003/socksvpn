@@ -5,7 +5,11 @@
 #include "common_def.h"
 #include "CServerCfg.h"
 #include "CSocksSrv.h"
-#include "CSocksSrvMgr.h"
+
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
+
 #include "socks_relay.h"
 #include "CWebApi.h"
 
@@ -135,9 +139,6 @@ int CServCfgMgr::set_server_online(char *sn, char *pub_ip, char *pri_ip)
 
             /*设置在线*/
             tmp_srvCfg->set_online(TRUE);
-
-            /*拷贝配置*/
-            *srvCfg = *tmp_srvCfg;
             break;
         }
     }
@@ -166,7 +167,7 @@ int CServCfgMgr::get_server_cfg(char *sn, CServerCfg* srvCfg)
         tmpSrvCfg = *itr;
         if (tmpSrvCfg->is_self(sn))
         {
-            *srvCfg = tmpSrvCfg;
+            *srvCfg = *tmpSrvCfg;
             MUTEX_UNLOCK(m_obj_lock);
             return 0;
         }
@@ -201,7 +202,7 @@ void CServCfgMgr::add_server_cfg_by_pkt(char *sn, char *pub_ip, char *pri_ip)
     _LOG_INFO("add new server cfg by pkt: SN %s, pubip %s, priip %s", 
         sn, pub_ip, pri_ip);
 
-    CServerCfg *tmp_srvCfg = new CServerCfg;
+    CServerCfg *tmp_srvCfg = new CServerCfg();
     m_objs.push_back(tmp_srvCfg);
 
     tmp_srvCfg->set_online(true);

@@ -10,21 +10,6 @@
 #include "CLocalServerPool.h"
 #include "socks_server.h"
 
-int CClient::send_data(char *buf, int buf_len)
-{
-    if(0 != g_localSrvPool->send_on_conn_obj(m_local_srv_index, buf, buf_len))
-    {
-        return -1;
-    }
-
-    if (g_localSrvPool->is_conn_obj_send_busy(m_local_srv_index))
-    {
-        this->m_owner_conn->set_client_busy(true);
-    }
-
-    return 0;
-}
-
 int CClient::send_remote_close_msg()
 {
     /*nothing to send, just close remote in free_handle*/
@@ -45,17 +30,32 @@ int CClient::send_remote_close_msg()
     s2rhdr.sub_type = REMOTE_CLOSED;
     PKT_S2R_HDR_HTON(&s2rhdr);
 
-    MUTEX_LOCK(m_local_srv_lock);
-    if((0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
-        || (0 != this->send_data((char*)&s2rhdr, sizeof(PKT_S2R_HDR_T))))
+    CLocalServer *localSrv = NULL;
+
+    g_localSrvPool->lock_index(m_local_srv_index);
+    localSrv = (CLocalServer*)g_localSrvPool->get_conn_obj(m_local_srv_index);
+    if (NULL == localSrv)
     {
-        MUTEX_UNLOCK(m_local_srv_lock);
+        g_localSrvPool->unlock_index(m_local_srv_index);
+        _LOG_WARN("fail to find clientserver by %s/%u when send connect result to client", m_ipstr, m_port);
+        return -1;
+    }
+
+    if((0 != localSrv->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
+        || (0 != localSrv->send_data((char*)&s2rhdr, sizeof(PKT_S2R_HDR_T))))
+    {
+        g_localSrvPool->unlock_index(m_local_srv_index);
 
         _LOG_ERROR("client(%s/%u/%s/%u/fd%d) send remote close msg to client failed", m_ipstr, m_port, 
             m_inner_ipstr, m_inner_port, m_fd);
         return -1;
     }
-    MUTEX_UNLOCK(m_local_srv_lock);
+
+    if (localSrv->is_send_busy())
+    {
+        this->m_owner_conn->set_client_busy(true);
+    }
+    g_localSrvPool->unlock_index(m_local_srv_index);
 
     _LOG_INFO("client(%s/%u/%s/%u/fd%d) send remote close msg to client", m_ipstr, m_port, 
         m_inner_ipstr, m_inner_port, m_fd);
@@ -97,18 +97,34 @@ int CClient::send_connect_result(BOOL result)
     s2rhdr.sub_type = S2R_CONNECT_RESULT;
     PKT_S2R_HDR_HTON(&s2rhdr);
 
-    MUTEX_LOCK(m_local_srv_lock);
-    if((0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
-        || (0 != this->send_data((char*)&s2rhdr, sizeof(PKT_S2R_HDR_T)))
-        || (0 != this->send_data(resp_buf, sizeof(resp_buf))))
-    {
-        MUTEX_UNLOCK(m_local_srv_lock);
+    CLocalServer *localSrv = NULL;
 
-        _LOG_ERROR("client(%s/%u/%s/%u/fd%d) send connect result to client failed", m_ipstr, m_port, 
-        m_inner_ipstr, m_inner_port, m_fd);
+    g_localSrvPool->lock_index(m_local_srv_index);
+    localSrv = (CLocalServer*)g_localSrvPool->get_conn_obj(m_local_srv_index);
+    if (NULL == localSrv)
+    {
+        g_localSrvPool->unlock_index(m_local_srv_index);
+        _LOG_WARN("fail to find clientserver by %s/%u when send connect result to client", m_ipstr, m_port);
         return -1;
     }
-    MUTEX_UNLOCK(m_local_srv_lock);
+
+    if((0 != localSrv->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
+        || (0 != localSrv->send_data((char*)&s2rhdr, sizeof(PKT_S2R_HDR_T)))
+        || (0 != localSrv->send_data(resp_buf, sizeof(resp_buf))))
+    {
+        g_localSrvPool->unlock_index(m_local_srv_index);
+
+        _LOG_ERROR("client(%s/%u/%s/%u/fd%d) send connect result to client failed", m_ipstr, m_port, 
+                m_inner_ipstr, m_inner_port, m_fd);
+        return -1;
+    }
+
+    if (localSrv->is_send_busy())
+    {
+        this->m_owner_conn->set_client_busy(true);
+    }
+
+    g_localSrvPool->unlock_index(m_local_srv_index);
 
     _LOG_INFO("client(%s/%u/%s/%u/fd%d) send connect result to client", m_ipstr, m_port, 
         m_inner_ipstr, m_inner_port, m_fd);
@@ -134,15 +150,31 @@ int CClient::send_data_msg(char *buf, int buf_len)
     s2rhdr.sub_type = S2R_DATA;
     PKT_S2R_HDR_HTON(&s2rhdr);
 
-    MUTEX_LOCK(m_local_srv_lock);
-    if((0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
-        || (0 != this->send_data((char*)&s2rhdr, sizeof(PKT_S2R_HDR_T)))
-        || (0 != this->send_data(buf, buf_len)))
+    CLocalServer *localSrv = NULL;
+
+    g_localSrvPool->lock_index(m_local_srv_index);
+    localSrv = (CLocalServer*)g_localSrvPool->get_conn_obj(m_local_srv_index);
+    if (NULL == localSrv)
     {
-        MUTEX_UNLOCK(m_local_srv_lock);
+        g_localSrvPool->unlock_index(m_local_srv_index);
+        _LOG_WARN("fail to find clientserver by %s/%u when send connect result to client", m_ipstr, m_port);
         return -1;
     }
-    MUTEX_UNLOCK(m_local_srv_lock);
+
+    if((0 != localSrv->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
+        || (0 != localSrv->send_data((char*)&s2rhdr, sizeof(PKT_S2R_HDR_T)))
+        || (0 != localSrv->send_data(buf, buf_len)))
+    {
+        g_localSrvPool->unlock_index(m_local_srv_index);
+        return -1;
+    }
+
+    if (localSrv->is_send_busy())
+    {
+        this->m_owner_conn->set_client_busy(true);
+    }
+
+    g_localSrvPool->unlock_index(m_local_srv_index);
 
     return 0;
 }

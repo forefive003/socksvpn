@@ -27,7 +27,7 @@ public:
     
 private:
     CServerCfg* find_server_cfg(char *sn);
-    int add_server_cfg_by_pkt(char *sn, char *pub_ip, char *pri_ip);
+    void add_server_cfg_by_pkt(char *sn, char *pub_ip, char *pri_ip);
 
 private:
     MUTEX_TYPE m_obj_lock;

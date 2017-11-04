@@ -8,8 +8,10 @@
 #include "relay_pkt_def.h"
 #include "CNetRecv.h"
 #include "CClientNet.h"
-#include "CClientNetSet.h"
-#include "CClientNetMgr.h"
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
+
 #include "socks_relay.h"
 #include "CClientServer.h"
 #include "CSocksMem.h"

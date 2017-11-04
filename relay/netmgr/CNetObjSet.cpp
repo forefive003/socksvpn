@@ -9,11 +9,12 @@
 #include "CClient.h"
 #include "CRemote.h"
 #include "CClientNet.h"
-#include "CClientNetMgr.h"
-#include "socks_relay.h"
-#include "CSocksSrvMgr.h"
+#include "CSocksSrv.h"
 #include "CNetObjPool.h"
 #include "CNetObjSet.h"
+#include "CNetObjMgr.h"
+
+#include "socks_relay.h"
 
 BOOL CNetObjSet::is_self(uint32_t pub_ipaddr, uint32_t private_ipaddr)
 {
@@ -119,10 +120,14 @@ void CClientNetSet::print_statistic(FILE *pFd)
                     g_clientNetPool->get_index_session_cnt(pool_index));
         	clientNet->print_statistic(pFd);
         }
-        g_ClientNetPool->unlock_index(pool_index);        
+        g_clientNetPool->unlock_index(pool_index);        
 	}
 
     this->unlock();
+}
+void CClientNetSet::aged_netobj()
+{
+    return;
 }
 
 void CSocksNetSet::set_srv_cfg(CServerCfg *srvCfg)
@@ -147,7 +152,7 @@ int CSocksNetSet::get_running_socks_servers(int *serv_array)
         pool_index = *itr;
 
         g_socksNetPool->lock_index(pool_index);
-        socksSrv = g_socksNetPool->get_conn_obj(pool_index);
+        socksSrv = (CSocksSrv*)g_socksNetPool->get_conn_obj(pool_index);
         if (NULL != socksSrv)
         {
             serv_array[cnt] = socksSrv->m_ipaddr;
@@ -233,7 +238,7 @@ void CSocksNetSet::close_all_socks_server()
         itr++;
 
         g_socksNetPool->lock_index(pool_index);
-        socksSrv = g_socksNetPool->get_conn_obj(pool_index);
+        socksSrv = (CSocksSrv*)g_socksNetPool->get_conn_obj(pool_index);
         if (NULL != socksSrv)
         {
             socksSrv->free();
@@ -273,4 +278,9 @@ void CSocksNetSet::print_statistic(FILE *pFd)
     }
 
     this->unlock();
+}
+
+void CSocksNetSet::aged_netobj()
+{
+    return;
 }

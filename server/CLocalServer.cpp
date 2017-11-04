@@ -66,18 +66,18 @@ int CLocalServer::send_register()
     strncpy(reginfo.sn, g_server_sn, MAX_SN_LEN);
     PKT_SRV_REG_HTON(&reginfo);
 
-    MUTEX_LOCK(m_local_srv_lock);
+    g_localSrvPool->lock_index(m_self_pool_index);
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
-        MUTEX_UNLOCK(m_local_srv_lock);
+        g_localSrvPool->unlock_index(m_self_pool_index);
         return -1;
     }
     if(0 != this->send_data((char*)&reginfo, sizeof(PKT_SRV_REG_T)))
     {
-        MUTEX_UNLOCK(m_local_srv_lock);
+        g_localSrvPool->unlock_index(m_self_pool_index);
         return -1;
     }
-    MUTEX_UNLOCK(m_local_srv_lock);
+    g_localSrvPool->unlock_index(m_self_pool_index);
 
     _LOG_INFO("send register msg to relay(%s/%u/fd%d)", m_ipstr, m_port, m_fd);
     return 0;
@@ -101,18 +101,18 @@ int CLocalServer::send_keepalive()
     strncpy(reginfo.sn, g_server_sn, MAX_SN_LEN);
     PKT_SRV_REG_HTON(&reginfo);
 
-    MUTEX_LOCK(m_local_srv_lock);
+    g_localSrvPool->lock_index(m_self_pool_index);
     if(0 != this->send_data((char*)&pkthdr, sizeof(PKT_HDR_T)))
     {
-        MUTEX_UNLOCK(m_local_srv_lock);
+        g_localSrvPool->unlock_index(m_self_pool_index);
         return -1;
     }
     if(0 != this->send_data((char*)&reginfo, sizeof(PKT_SRV_REG_T)))
     {
-        MUTEX_UNLOCK(m_local_srv_lock);
+        g_localSrvPool->unlock_index(m_self_pool_index);
         return -1;
     }  
-    MUTEX_UNLOCK(m_local_srv_lock);
+    g_localSrvPool->unlock_index(m_self_pool_index);
 
     _LOG_DEBUG("remote(%s/%u/fd%d) send keepalive msg", m_ipstr, m_port, m_fd);
     return 0;
@@ -527,5 +527,5 @@ void CLocalServer::print_statistic(FILE* pFd)
         uptimeTm.tm_sec);
 
     fprintf(pFd, "index %d, inner %s:%u, update-time %s\n", m_self_pool_index,
-        m_inner_ipstr, m_inner_port, dateformat);
+        m_local_ipstr, m_local_port, dateformat);
 }

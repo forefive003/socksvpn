@@ -42,7 +42,9 @@ void CConInfoDlg::DoDataExchange(CDataExchange* pDX)
 
 
 BEGIN_MESSAGE_MAP(CConInfoDlg, CDialogEx)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
+
 
 
 // CConInfoDlg message handlers

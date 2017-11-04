@@ -38,8 +38,9 @@ public:
 
     void set_self_pool_index(int index);
     int send_auth_result_msg(BOOL auth_ok);
+    
     BOOL is_self(uint32_t pub_ipaddr, uint16_t pub_port);
-    void set_user_passwd(char *username, char *passwd);
+
     void set_inner_info(uint32_t inner_ipaddr, uint16_t inner_port);
     void print_statistic(FILE *pFd);
 private:

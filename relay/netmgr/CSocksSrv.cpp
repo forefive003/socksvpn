@@ -5,7 +5,10 @@
 #include "common_def.h"
 #include "CClient.h"
 #include "CSocksSrv.h"
-#include "CSocksSrvMgr.h"
+#include "CNetObjPool.h"
+#include "CNetObjSet.h"
+#include "CNetObjMgr.h"
+
 #include "socks_relay.h"
 #include "CSocksMem.h"
 #include "CServerCfg.h"
@@ -28,7 +31,7 @@ int CSocksSrv::msg_srv_reg_handle(char *data_buf, int data_len)
     if (1 == srvReg->is_keepalive)
     {
         g_SocksSrvMgr->lock();
-        socksSrv = g_SocksSrvMgr->get_socks_server_by_innnerip(m_ipaddr, srvReg->local_ip);
+        socksSrv = (CSocksSrv*)g_SocksSrvMgr->get_netobj_set(m_ipaddr, srvReg->local_ip);
         if (NULL == socksSrv)
         {
             g_SocksSrvMgr->unlock();
@@ -45,8 +48,6 @@ int CSocksSrv::msg_srv_reg_handle(char *data_buf, int data_len)
 
         this->set_inner_info(srvReg->local_ip, srvReg->local_port);
 
-        /*上线处理*/
-        g_SrvCfgMgr->set_server_online(srvReg->sn, m_ipstr, m_inner_ipstr);
         /*获取配置*/
         g_SrvCfgMgr->get_server_cfg(srvReg->sn, &this->m_srvCfg);
 
@@ -284,7 +285,7 @@ int CSocksSrv::recv_handle(char *buf, int buf_len)
 void CSocksSrv::free_handle()
 {
     /*从管理中删除*/
-    g_SocksSrvMgr->del_netobj(m_self_pool_index, m_ipaddr, m_inner_ipstr);
+    g_SocksSrvMgr->del_netobj(m_self_pool_index, m_ipaddr, m_inner_ipaddr);
 
     /*从连接池中删除*/
     g_socksNetPool->del_conn_obj(m_self_pool_index);

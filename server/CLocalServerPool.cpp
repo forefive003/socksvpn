@@ -34,6 +34,8 @@ void CLocalServerPool::print_statistic(FILE* pFd)
 
 void CLocalServerPool::status_check()
 {
+	uint64_t cur_time = util_get_cur_time();
+	
 	for (int ii = 0; ii < m_max_conn_cnt; ii++)
 	{
 		this->lock_index(ii);
@@ -51,7 +53,7 @@ void CLocalServerPool::status_check()
 	        	if (-1 == index)
 	        	{
 	        		_LOG_ERROR("fail to add new conn obj, index %d", ii);
-	        		delete rmtSrv;
+	        		delete localSrv;
 	        	}
 	        	else
 	        	{

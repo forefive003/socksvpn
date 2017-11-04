@@ -3,6 +3,7 @@
 
 #include "relay_pkt_def.h"
 #include "socks_relay.h"
+#include "CNetObjPool.h"
 
 class CClient : public CBaseClient
 {

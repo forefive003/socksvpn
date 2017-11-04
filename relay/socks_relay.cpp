@@ -248,8 +248,8 @@ static int register_signal(void)
 static void _timer_callback(void* param1, void* param2,
                 void* param3, void* param4)
 {
-    g_SocksSrvMgr->aged_socks_server();
-    g_ClientNetMgr->aged_client_server();
+    g_SocksSrvMgr->aged_netobj();
+    g_ClientNetMgr->aged_netobj();
 
     print_statistic();
 }
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
     g_clientNetPool = new CNetObjPool(MAX_CLIENT_SRV_CNT);
     g_socksNetPool = new CNetObjPool(MAX_SOCKS_SRV_CNT);
 
-    g_SocksSrvMgr = new CSocksSrvMgr();
+    g_SocksSrvMgr = new CSocksNetMgr();
     g_ClientNetMgr = new CClientNetMgr();
 
     g_webApi = CWebApiRelay::instance(g_relay_url);

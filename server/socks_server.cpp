@@ -251,7 +251,7 @@ static void print_statistic()
     g_ConnMgr->print_statistic(pFd, false);
 
     fprintf(pFd, "SRVPOOL-STAT:\n");
-    g_localSrvPool->print_statisc(pFd);
+    g_localSrvPool->print_statistic(pFd);
 
     fclose(pFd);
     return;
@@ -337,15 +337,6 @@ int main(int argc, char **argv)
         loggger_exit();
         return -1;
     }
-
-#ifndef _WIN32
-    pthread_mutexattr_t mux_attr;
-    memset(&mux_attr, 0, sizeof(mux_attr));
-    pthread_mutexattr_settype(&mux_attr, PTHREAD_MUTEX_RECURSIVE);
-    MUTEX_SETUP_ATTR(m_local_srv_lock, &mux_attr);
-#else
-    MUTEX_SETUP_ATTR(m_local_srv_lock, NULL);
-#endif
 
     g_ConnMgr = CConnMgr::instance();
     g_webApi = CWebApi::instance(g_relay_domain);

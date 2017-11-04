@@ -1,6 +1,11 @@
 #ifndef _NETOBJ_SET_H
 #define _NETOBJ_SET_H
 
+#include "CWebApi.h"
+#include "socks_relay.h"
+#include "CServerCfg.h"
+
+
 typedef std::list<int> SRV_INDEX_LIST;
 typedef SRV_INDEX_LIST::iterator SRV_INDEX_LIST_Itr;
 
@@ -10,6 +15,9 @@ typedef NETOBJ_SET_LIST::iterator NETOBJ_SET_LIST_Itr;
 
 class CNetObjSet
 {
+	friend class CClientNetSet;
+	friend class CSocksNetSet;
+	
 public:
 	CNetObjSet(uint32_t ipaddr, uint32_t private_ipaddr)
 	{
@@ -102,16 +110,26 @@ public:
 	CSocksNetSet(uint32_t ipaddr, uint32_t private_ipaddr, CServerCfg *srvCfg) : CNetObjSet(ipaddr, private_ipaddr)
 	{
 		m_srvCfg = *srvCfg;
+
+		/*上线处理*/
+        g_SrvCfgMgr->set_server_online(m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
+
 		/*通知平台*/
-	    if(0 != g_webApi->postServerOnline(g_relaysn, srvCfg->m_sn, srvCfg->m_pub_ip, srvCfg->m_pri_ip, TRUE))
+	    if(0 != g_webApi->postServerOnline(g_relaysn, m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip, TRUE))
 	    {
-	        _LOG_WARN("socksserver %s, localip %s failed to post platform", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
+	        _LOG_WARN("socksserver %s, localip %s failed to post platform online", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
 	    }
 	}
 	virtual ~CSocksNetSet()
 	{
 		/*下线处理*/
-    	g_SrvCfgMgr->server_offline_handle(m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
+    	g_SrvCfgMgr->set_server_offline(m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
+
+    	/*通知平台*/
+	    if(0 != g_webApi->postServerOnline(g_relaysn, m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip, FALSE))
+	    {
+	        _LOG_WARN("socksserver %s, localip %s failed to post platform offline", m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
+	    }
 	}
 
 public:

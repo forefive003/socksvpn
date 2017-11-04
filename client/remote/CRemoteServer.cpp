@@ -434,7 +434,7 @@ void CRemoteServer::print_statistic(FILE* pFd)
 
     fprintf(pFd, "index %d, inner %s:%u, authed: %d, update-time %s\n", 
         m_self_pool_index,
-        m_inner_ipstr, m_inner_port, 
+		m_local_ipstr, m_local_port,
         m_is_authed,
         dateformat);
 }
