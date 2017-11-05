@@ -391,7 +391,7 @@ void CSocksSrv::print_statistic(FILE *pFd)
         uptimeTm.tm_min, 
         uptimeTm.tm_sec);
 
-    fprintf(pFd, "server-%s:%u inner %s:%u update-time %s\n", m_ipstr, m_port,
+    fprintf(pFd, "    server-%s:%u inner %s:%u update-time %s\n", m_ipstr, m_port,
         m_inner_ipstr, m_inner_port, dateformat);
 
     fprintf(pFd, "\tsn:%s, acct cnt %d\n", m_srvCfg.m_sn, m_srvCfg.m_acct_cnt);

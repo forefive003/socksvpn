@@ -433,7 +433,7 @@ void CRemoteServer::print_statistic(FILE* pFd)
             uptimeTm.tm_min, 
             uptimeTm.tm_sec);
 
-        fprintf(pFd, "index %d, inner %s:%u, authed: %d, update-time %s\n", 
+        fprintf(pFd, "   index %d, inner %s:%u, authed: %d, update-time %s\n", 
             m_self_pool_index,
     		m_local_ipstr, m_local_port,
             m_is_authed,
@@ -441,7 +441,7 @@ void CRemoteServer::print_statistic(FILE* pFd)
     }
     else
     {
-        fprintf(pFd, "index %d, inner %s:%u, authed: %d, update-time --------------\n", 
+        fprintf(pFd, "   index %d, inner %s:%u, authed: %d, update-time --------------\n", 
             m_self_pool_index,
             m_local_ipstr, m_local_port,
             m_is_authed);

@@ -547,7 +547,7 @@ void CClientNet::print_statistic(FILE *pFd)
         uptimeTm.tm_min, 
         uptimeTm.tm_sec);
 
-    fprintf(pFd, "client-%s:%u inner %s:%u, update-time %s\n", m_ipstr, m_port,
+    fprintf(pFd, "    client-%s:%u inner %s:%u, update-time %s\n", m_ipstr, m_port,
         m_inner_ipstr, m_inner_port, dateformat);
     fprintf(pFd, "\tsend: remote-close:%"PRIu64"\t connect-resp:%"PRIu64"\t data:%"PRIu64"\n", 
         m_send_remote_close_cnt, m_send_connect_result_cnt, m_send_data_cnt);

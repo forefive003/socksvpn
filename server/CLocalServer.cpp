@@ -527,12 +527,12 @@ void CLocalServer::print_statistic(FILE* pFd)
             uptimeTm.tm_min, 
             uptimeTm.tm_sec);
 
-        fprintf(pFd, "index %d, inner %s:%u, update-time %s\n", m_self_pool_index,
+        fprintf(pFd, "    index %d, inner %s:%u, update-time %s\n", m_self_pool_index,
             m_local_ipstr, m_local_port, dateformat);
     }
     else
     {
-        fprintf(pFd, "index %d, inner %s:%u, update-time -----------\n", m_self_pool_index,
+        fprintf(pFd, "    index %d, inner %s:%u, update-time -----------\n", m_self_pool_index,
             m_local_ipstr, m_local_port);
     }
 }

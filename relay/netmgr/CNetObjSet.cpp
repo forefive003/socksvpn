@@ -82,12 +82,14 @@ void CNetObjSet::del_server_obj(int index)
             itr != m_conn_list.end(); )
     {
         pool_index = *itr;
-        /*maybe timenode deleted in callback func, after that, itr not valid*/
-        itr++;
 
         if (pool_index == index)
         {
-        	m_conn_list.remove(index);
+        	itr = m_conn_list.erase(itr);
+        }
+        else
+        {
+            itr++;
         }
 	}
 
@@ -101,7 +103,7 @@ void CClientNetSet::print_statistic(FILE *pFd)
     CClientNet *clientNet = NULL;
 
     fprintf(pFd, "###CLIENT (pub_ip %s, pri %s, cnt %d):\n", 
-            m_ipstr, m_private_ipstr, m_conn_list.size());
+            m_ipstr, m_private_ipstr, (int)m_conn_list.size());
 
     this->lock();
     
@@ -239,7 +241,7 @@ void CSocksNetSet::print_statistic(FILE *pFd)
     CSocksSrv *socksSrv = NULL;
 
     fprintf(pFd, "###SERVER (pub_ip %s, pri %s, cnt %d):\n", 
-            m_ipstr, m_private_ipstr, m_conn_list.size());
+            m_ipstr, m_private_ipstr, (int)m_conn_list.size());
 
     this->lock();
     
@@ -253,7 +255,7 @@ void CSocksNetSet::print_statistic(FILE *pFd)
         socksSrv = (CSocksSrv*)g_socksNetPool->get_conn_obj(pool_index);
         if (NULL != socksSrv)
         {
-            fprintf(pFd, "index %d, session cnt %d:\n", pool_index, 
+            fprintf(pFd, "    index %d, session cnt %d:\n", pool_index, 
                     g_socksNetPool->get_index_session_cnt(pool_index));
             socksSrv->print_statistic(pFd);
         }
