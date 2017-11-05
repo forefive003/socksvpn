@@ -52,7 +52,6 @@ public:
     int m_self_pool_index;
 };
 
-extern uint64_t g_latest_alive_time;
 extern uint64_t g_alive_cnt;
 extern uint64_t g_req_cnt;
 extern uint64_t g_reply_cnt;

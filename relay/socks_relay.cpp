@@ -166,10 +166,10 @@ static void  print_statistic()
     g_ConnMgr->print_statistic(pFd, false);
 
     fprintf(pFd, "CLIENT-STAT:\n");
-    g_SocksSrvMgr->print_statistic(pFd);
+    g_ClientNetMgr->print_statistic(pFd);
 
     fprintf(pFd, "SERVER-STAT:\n");
-    g_ClientNetMgr->print_statistic(pFd);
+    g_SocksSrvMgr->print_statistic(pFd);
 
     fclose(pFd);
     return;

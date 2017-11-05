@@ -73,7 +73,6 @@ void CRemoteServerPool::status_check()
 					if (cur_time - rmtSrv->m_latest_auth_time >= 60)
 					{
 						rmtSrv->send_auth_quest_msg();
-						rmtSrv->m_latest_auth_time = util_get_cur_time();
 					}
 				}
 				else
@@ -83,7 +82,6 @@ void CRemoteServerPool::status_check()
 					if (cur_time - rmtSrv->m_latest_auth_time >= 6)
 					{
 						rmtSrv->send_auth_quest_msg();
-						rmtSrv->m_latest_auth_time = util_get_cur_time();
 					}
 				}
 			}
@@ -112,11 +110,13 @@ void CRemoteServerPool::let_re_auth()
 
 int CRemoteServerPool::get_active_conn_obj()
 {
-	int ret = 0;
+    int ret_index = -1;
+    int min_conn_cnt = 0;
+    int tmp_conn_cnt = 0;
+
 	CRemoteServer *rmtSrv = NULL;
 
-	this->lock();
-	for (int ii = m_cur_index; ii < m_max_conn_cnt; ii++)
+	for (int ii = 0; ii < m_max_conn_cnt; ii++)
 	{
 		this->lock_index(ii);
 
@@ -127,24 +127,33 @@ int CRemoteServerPool::get_active_conn_obj()
 			continue;
 		}
 
-		if (rmtSrv->is_authed())
+		if (!rmtSrv->is_authed())
 		{
 			this->unlock_index(ii);
-			ret = ii;
-			break; 
+			continue;
 		}
+
+		tmp_conn_cnt = g_remoteSrvPool->get_index_session_cnt(ii);
+		if (0 == tmp_conn_cnt)
+        {
+            ret_index = ii;
+            this->unlock_index(ii);
+            break;
+        }
+        
+        if (0 == min_conn_cnt)
+        {
+            min_conn_cnt = tmp_conn_cnt;
+            ret_index = ii;
+        }
+        else if(min_conn_cnt > tmp_conn_cnt)
+        {
+            min_conn_cnt = tmp_conn_cnt;
+            ret_index = ii;
+        }
+        
 		this->unlock_index(ii);
 	}
-
-	if (-1 != ret)
-	{
-		m_cur_index++;
-		if (m_cur_index == m_max_conn_cnt)
-		{
-			m_cur_index = 0;
-		}
-	}
-	this->unlock();
 	
-	return ret;
+	return ret_index;
 }

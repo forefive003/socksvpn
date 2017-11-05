@@ -214,10 +214,9 @@ int CLocalServer::msg_request_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int 
     pConn->attach_client(pClient);
     if (0 != pClient->init())
     {
-        pConn->detach_client();
         g_ConnMgr->del_conn(pConn);
+        pConn->detach_client();        
         delete pClient;
-        delete pConn;
         return -1;
     }
 
@@ -510,22 +509,30 @@ int CLocalServer::send_post_handle()
 
 void CLocalServer::print_statistic(FILE* pFd)
 {
-    char dateformat[64] = {'\0'};
-    struct tm uptimeTm;
-    #ifdef _WIN32
-    localtime_s(&uptimeTm, (time_t*)&this->m_latest_alive_time);
-    #else
-    localtime_r((time_t*)&this->m_latest_alive_time, &uptimeTm);
-    #endif
+    if (m_latest_alive_time != 0)
+    {
+        char dateformat[64] = {'\0'};
+        struct tm uptimeTm;
+        #ifdef _WIN32
+        localtime_s(&uptimeTm, (time_t*)&this->m_latest_alive_time);
+        #else
+        localtime_r((time_t*)&this->m_latest_alive_time, &uptimeTm);
+        #endif
 
-    sprintf(dateformat, "%04d-%02d-%02d %02d:%02d:%02d", 
-        uptimeTm.tm_year + 1900, 
-        uptimeTm.tm_mon + 1, 
-        uptimeTm.tm_mday, 
-        uptimeTm.tm_hour, 
-        uptimeTm.tm_min, 
-        uptimeTm.tm_sec);
+        sprintf(dateformat, "%04d-%02d-%02d %02d:%02d:%02d", 
+            uptimeTm.tm_year + 1900, 
+            uptimeTm.tm_mon + 1, 
+            uptimeTm.tm_mday, 
+            uptimeTm.tm_hour, 
+            uptimeTm.tm_min, 
+            uptimeTm.tm_sec);
 
-    fprintf(pFd, "index %d, inner %s:%u, update-time %s\n", m_self_pool_index,
-        m_local_ipstr, m_local_port, dateformat);
+        fprintf(pFd, "index %d, inner %s:%u, update-time %s\n", m_self_pool_index,
+            m_local_ipstr, m_local_port, dateformat);
+    }
+    else
+    {
+        fprintf(pFd, "index %d, inner %s:%u, update-time -----------\n", m_self_pool_index,
+            m_local_ipstr, m_local_port);
+    }
 }

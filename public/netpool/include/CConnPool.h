@@ -8,11 +8,7 @@ typedef struct conn_obj
 {
 	struct conn_obj *next;
 
-#ifdef _WIN32
-	LONG data_lock;
-#else
-	pthread_spinlock_t data_lock;
-#endif
+	MUTEX_TYPE data_lock;
 
 	int index;
 	CNetRecv *connObj;	
@@ -40,10 +36,7 @@ public:
 
 public:
 	int init();
-	void free(); /*disconnect connection, and free*/
-	
-	void lock();
-	void unlock();
+	void free(); /*disconnect connection, and free*/	
 	
 	void lock_index(int index);
 	void unlock_index(int index);
@@ -60,6 +53,9 @@ public:
 	conn_obj_t *m_conns_array;
 
 private:
+	void lock();
+	void unlock();
+
 	conn_obj_t *m_free_conns;
 #ifdef _WIN32
 	LONG m_data_lock;

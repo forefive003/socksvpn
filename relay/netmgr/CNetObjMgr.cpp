@@ -16,7 +16,14 @@ CSocksNetMgr *g_SocksSrvMgr = NULL;
 
 CNetObjMgr::CNetObjMgr()
 {
+#ifndef _WIN32
+    pthread_mutexattr_t mux_attr;
+    memset(&mux_attr, 0, sizeof(mux_attr));
+    pthread_mutexattr_settype(&mux_attr, PTHREAD_MUTEX_RECURSIVE);
+    MUTEX_SETUP_ATTR(m_obj_lock, &mux_attr);
+#else
     MUTEX_SETUP(m_obj_lock);
+#endif
 }
 
 CNetObjMgr::~CNetObjMgr()
@@ -200,23 +207,27 @@ int CSocksNetMgr::add_netobj(int index, uint32_t pub_ipaddr, uint32_t private_ip
     return 0; 
 }
 
-int CSocksNetMgr::get_running_socks_servers(uint32_t pub_ipaddr, uint32_t private_ipaddr,
-                        int *serv_array)
+int CSocksNetMgr::get_running_socks_servers(int *serv_array)
 {
-    int ret = 0;
+    int cnt = 0;
 
+    NETOBJ_SET_LIST_Itr itr;
+    CSocksNetSet *socksNetSet = NULL;
+        
     this->lock(); 
-    CSocksNetSet *socksNetSet = (CSocksNetSet*)this->get_netobj_set(pub_ipaddr, private_ipaddr);
-    if (NULL == socksNetSet)
+
+    for (itr = m_netset_objs.begin();
+            itr != m_netset_objs.end();
+            itr++)
     {
-        this->unlock(); 
-        return 0;
+        socksNetSet = (CSocksNetSet*)*itr;
+        
+        serv_array[cnt] = socksNetSet->m_ipaddr;
+        cnt++;
     }
 
-    ret = socksNetSet->get_running_socks_servers(serv_array);
     this->unlock(); 
-
-    return ret;
+    return cnt;  
 }
 
 CNetObjSet* CSocksNetMgr::get_socks_server_by_auth(uint32_t srv_pub_ipaddr, 
@@ -236,8 +247,16 @@ CNetObjSet* CSocksNetMgr::get_socks_server_by_auth(uint32_t srv_pub_ipaddr,
             continue;
         }
 
-        if(socksNetSet->user_authen(username, passwd))
+        if (is_relay_need_platform())
         {
+            if(socksNetSet->user_authen(username, passwd))
+            {
+                return (CNetObjSet*)socksNetSet;
+            }
+        }
+        else
+        {
+            /*没有平台,不需要认证*/
             return (CNetObjSet*)socksNetSet;
         }
     }

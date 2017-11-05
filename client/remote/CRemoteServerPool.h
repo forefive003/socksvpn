@@ -8,7 +8,6 @@ class CRemoteServerPool : public CConnPool
 public:
 	CRemoteServerPool(int maxConnCnt) : CConnPool(maxConnCnt)
 	{
-		m_cur_index = 0;
 		m_session_cnt = new int[maxConnCnt];
 
 		for (int ii = 0; ii<maxConnCnt; ii++)
@@ -47,7 +46,6 @@ public:
 	}
 
 private:
-	int m_cur_index;
 	int *m_session_cnt;
 };
 

@@ -48,8 +48,7 @@ public:
     }
     int add_netobj(int index, uint32_t pub_ipaddr, uint32_t private_ipaddr, CServerCfg *srvCfg);
 
-    int get_running_socks_servers(uint32_t pub_ipaddr, uint32_t private_ipaddr,
-                        int *serv_array);
+    int get_running_socks_servers(int *serv_array);
     CNetObjSet* get_socks_server_by_auth(uint32_t srv_pub_ipaddr, 
                 const char *username, const char *passwd);
     int get_active_socks_server(uint32_t pub_ipaddr, uint32_t private_ipaddr);

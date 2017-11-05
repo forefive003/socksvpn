@@ -36,7 +36,7 @@ int CClientNet::send_auth_result_msg(BOOL auth_ok)
     }
 
     int srv_ip_array[32] = {0};
-    int srvs_cnt = g_SocksSrvMgr->get_running_socks_servers(m_srv_pub_ipaddr, m_srv_private_ipaddr, srv_ip_array);
+    int srvs_cnt = g_SocksSrvMgr->get_running_socks_servers(srv_ip_array);
     if (srvs_cnt > 32) 
     {
         srvs_cnt = 32;
@@ -286,10 +286,9 @@ int CClientNet::msg_connect_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int da
 
     if (0 != pClient->init())
     {
-        pConn->detach_client();
         g_ConnMgr->del_conn(pConn);
+        pConn->detach_client();
         delete pClient;
-        delete pConn;
         return -1;
     }    
 
@@ -299,10 +298,9 @@ int CClientNet::msg_connect_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int da
     {
         _LOG_WARN("fail to get active server conn obj for pub 0x%x, pri 0x%x", 
             this->m_srv_pub_ipaddr, this->m_srv_private_ipaddr);
-        pConn->detach_client();
         g_ConnMgr->del_conn(pConn);
+        pConn->detach_client();
         delete pClient;
-        delete pConn;
         return -1;
     }
 

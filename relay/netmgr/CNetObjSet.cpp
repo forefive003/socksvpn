@@ -135,36 +135,6 @@ void CSocksNetSet::set_srv_cfg(CServerCfg *srvCfg)
     this->m_srvCfg = *srvCfg;
 }
 
-int CSocksNetSet::get_running_socks_servers(int *serv_array)
-{
-    int cnt = 0;
-    SRV_INDEX_LIST_Itr itr;
-    int pool_index = 0;
-    CSocksSrv *socksSrv = NULL;
-
-    this->lock();
-    
-    /*handle accept fd firstly*/
-    for (itr = m_conn_list.begin();
-            itr != m_conn_list.end(); 
-            itr++)
-    {
-        pool_index = *itr;
-
-        g_socksNetPool->lock_index(pool_index);
-        socksSrv = (CSocksSrv*)g_socksNetPool->get_conn_obj(pool_index);
-        if (NULL != socksSrv)
-        {
-            serv_array[cnt] = socksSrv->m_ipaddr;
-            cnt++;
-        }
-        g_socksNetPool->unlock_index(pool_index);        
-    }
-
-    this->unlock();
-    return cnt;
-}
-
 bool CSocksNetSet::user_authen(const char *username, const char *passwd)
 {
     for (int ii = 0; ii < m_srvCfg.m_acct_cnt; ii++)
@@ -184,8 +154,8 @@ int CSocksNetSet::get_active_socks_server()
     SRV_INDEX_LIST_Itr itr;
     int pool_index = 0;
 
-    int max_pool_index = -1;
-    int max_conn_cnt = 0;
+    int ret_index = -1;
+    int min_conn_cnt = 0;
     int tmp_conn_cnt = 0;
 
     this->lock();
@@ -207,9 +177,22 @@ int CSocksNetSet::get_active_socks_server()
         }
 
         tmp_conn_cnt = g_socksNetPool->get_index_session_cnt(pool_index);
-        if(max_conn_cnt < tmp_conn_cnt)
+        if (0 == tmp_conn_cnt)
         {
-            max_pool_index = pool_index;
+            ret_index = pool_index;
+            g_socksNetPool->unlock_index(pool_index);
+            break;
+        }
+
+        if (0 == min_conn_cnt)
+        {
+            min_conn_cnt = tmp_conn_cnt;
+            ret_index = pool_index;
+        }
+        else if(min_conn_cnt > tmp_conn_cnt)
+        {
+            min_conn_cnt = tmp_conn_cnt;
+            ret_index = pool_index;
         }
 
         g_socksNetPool->unlock_index(pool_index);        
@@ -217,7 +200,7 @@ int CSocksNetSet::get_active_socks_server()
 
     this->unlock();   
 
-    return max_pool_index;
+    return ret_index;
 }
 
 void CSocksNetSet::close_all_socks_server()

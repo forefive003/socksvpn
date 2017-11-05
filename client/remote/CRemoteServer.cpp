@@ -15,7 +15,6 @@
 #include "CSyslogMgr.h"
 #include "CRemoteServerPool.h"
 
-uint64_t g_latest_alive_time = 0;
 uint64_t g_alive_cnt = 0;
 uint64_t g_req_cnt = 0;
 uint64_t g_reply_cnt = 0;
@@ -225,7 +224,7 @@ int CRemoteServer::auth_result_msg_handle(BOOL result)
 	if (result)
 	{
         g_alive_cnt++;
-        g_latest_alive_time = util_get_cur_time();
+        m_latest_auth_time = util_get_cur_time();
 
         if (!m_is_authed)
         {
@@ -416,25 +415,35 @@ int CRemoteServer::recv_handle(char *buf, int buf_len)
 
 void CRemoteServer::print_statistic(FILE* pFd)
 {
-    char dateformat[64] = {'\0'};
-    struct tm uptimeTm;
-    #ifdef _WIN32
-    localtime_s(&uptimeTm, (time_t*)&this->m_latest_auth_time);
-    #else
-    localtime_r((time_t*)&this->m_latest_auth_time, &uptimeTm);
-    #endif
+    if (m_latest_auth_time != 0)
+    {
+        char dateformat[64] = {'\0'};
+        struct tm uptimeTm;
+        #ifdef _WIN32
+        localtime_s(&uptimeTm, (time_t*)&this->m_latest_auth_time);
+        #else
+        localtime_r((time_t*)&this->m_latest_auth_time, &uptimeTm);
+        #endif
 
-    sprintf(dateformat, "%04d-%02d-%02d %02d:%02d:%02d", 
-        uptimeTm.tm_year + 1900, 
-        uptimeTm.tm_mon + 1, 
-        uptimeTm.tm_mday, 
-        uptimeTm.tm_hour, 
-        uptimeTm.tm_min, 
-        uptimeTm.tm_sec);
+        sprintf(dateformat, "%04d-%02d-%02d %02d:%02d:%02d", 
+            uptimeTm.tm_year + 1900, 
+            uptimeTm.tm_mon + 1, 
+            uptimeTm.tm_mday, 
+            uptimeTm.tm_hour, 
+            uptimeTm.tm_min, 
+            uptimeTm.tm_sec);
 
-    fprintf(pFd, "index %d, inner %s:%u, authed: %d, update-time %s\n", 
-        m_self_pool_index,
-		m_local_ipstr, m_local_port,
-        m_is_authed,
-        dateformat);
+        fprintf(pFd, "index %d, inner %s:%u, authed: %d, update-time %s\n", 
+            m_self_pool_index,
+    		m_local_ipstr, m_local_port,
+            m_is_authed,
+            dateformat);
+    }
+    else
+    {
+        fprintf(pFd, "index %d, inner %s:%u, authed: %d, update-time --------------\n", 
+            m_self_pool_index,
+            m_local_ipstr, m_local_port,
+            m_is_authed);
+    }
 }

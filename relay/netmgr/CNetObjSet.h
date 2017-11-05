@@ -114,22 +114,28 @@ public:
 		/*上线处理*/
         g_SrvCfgMgr->set_server_online(m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
 
-		/*通知平台*/
-	    if(0 != g_webApi->postServerOnline(g_relaysn, m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip, TRUE))
+        if (is_relay_need_platform())
 	    {
-	        _LOG_WARN("socksserver %s, localip %s failed to post platform online", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
-	    }
+			/*通知平台*/
+		    if(0 != g_webApi->postServerOnline(g_relaysn, m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip, TRUE))
+		    {
+		        _LOG_WARN("socksserver %s, localip %s failed to post platform online", srvCfg->m_pub_ip, srvCfg->m_pri_ip);
+		    }
+		}
 	}
 	virtual ~CSocksNetSet()
 	{
 		/*下线处理*/
     	g_SrvCfgMgr->set_server_offline(m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
 
-    	/*通知平台*/
-	    if(0 != g_webApi->postServerOnline(g_relaysn, m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip, FALSE))
-	    {
-	        _LOG_WARN("socksserver %s, localip %s failed to post platform offline", m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
-	    }
+    	if (is_relay_need_platform())
+    	{
+	    	/*通知平台*/
+		    if(0 != g_webApi->postServerOnline(g_relaysn, m_srvCfg.m_sn, m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip, FALSE))
+		    {
+		        _LOG_WARN("socksserver %s, localip %s failed to post platform offline", m_srvCfg.m_pub_ip, m_srvCfg.m_pri_ip);
+		    }
+		}
 	}
 
 public:
@@ -139,7 +145,6 @@ public:
 	void set_srv_cfg(CServerCfg *srvCfg);
 	bool user_authen(const char *username, const char *passwd);
 		
-	int get_running_socks_servers(int *serv_array);
 	int get_active_socks_server();
 	void close_all_socks_server();
 

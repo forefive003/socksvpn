@@ -12,6 +12,8 @@ public:
         memset(m_recv_buf, 0, sizeof(m_recv_buf));
         m_recv_len = 0;
 
+        m_latest_alive_time = 0;
+        m_self_pool_index = -1;
         _LOG_INFO("create local server(peer %s:%u)", m_ipstr, m_port);
     }
     virtual ~CLocalServer()
