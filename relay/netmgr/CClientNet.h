@@ -55,6 +55,8 @@ private:
     int msg_data_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_len);
     int msg_connect_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_len);
     int msg_client_closed_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_len);
+    int msg_client_iobusy_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_len);
+    int msg_client_ioresume_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_len);
 
 private:
     char m_recv_buf[2048];
@@ -79,6 +81,7 @@ public:
     uint64_t m_recv_client_close_cnt;
     uint64_t m_recv_connect_request_cnt;
     uint64_t m_recv_data_cnt;
+    uint64_t m_recv_client_iobusy_cnt;
 
 public:
     uint64_t m_update_time;

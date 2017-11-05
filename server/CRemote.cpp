@@ -57,11 +57,14 @@ int CRemote::recv_handle(char *buf, int buf_len)
     }
 
     MUTEX_LOCK(m_owner_conn->m_event_lock);
-    if (m_owner_conn->is_client_busy())
+    if (m_owner_conn->is_client_congestion())
     {
         /*unregister read event*/
-        this->pause_read();
-        m_owner_conn->set_remote_pause_read(true);
+        if (false == m_owner_conn->is_remote_pause_read())
+        {
+            this->pause_read();
+            m_owner_conn->set_remote_pause_read(true);
+        }
     }
     MUTEX_UNLOCK(m_owner_conn->m_event_lock);
 

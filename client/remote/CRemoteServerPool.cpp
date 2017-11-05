@@ -39,28 +39,26 @@ void CRemoteServerPool::status_check()
 		this->lock_index(ii);
 
 		CRemoteServer *rmtSrv = (CRemoteServer*)this->get_conn_obj(ii);
-
 		if (rmtSrv == NULL)
 		{
 			proxy_cfg_t* cfginfo = proxy_cfg_get();
-			CRemoteServer *rmtSrv = new CRemoteServer(cfginfo->vpn_ip, cfginfo->vpn_port);
-	        if(0 != rmtSrv->init())
-	        {
-	        	delete rmtSrv;
-	        }
-	        else
-	        {
-	        	int index = this->add_conn_obj((CNetRecv*)rmtSrv);
-	        	if (-1 == index)
-	        	{
-	        		_LOG_ERROR("fail to add new conn obj, index %d", ii);
-	        		delete rmtSrv;
-	        	}
-	        	else
-	        	{
-	        		rmtSrv->set_self_pool_index(index);
-	        	}
-	        }
+			rmtSrv = new CRemoteServer(cfginfo->vpn_ip, cfginfo->vpn_port);
+			int index = this->add_conn_obj((CNetRecv*)rmtSrv);
+        	if (-1 == index)
+        	{
+        		_LOG_ERROR("fail to add new conn obj, index %d", ii);
+        		delete rmtSrv;
+        	}
+        	else
+        	{
+        		/*如果先init,在设置线程索引,会导致assert异常*/        		
+        		rmtSrv->set_self_pool_index(index);
+		        if(0 != rmtSrv->init())
+		        {
+		        	delete rmtSrv;
+		        	this->del_conn_obj(index);
+		        }
+        	}
 		}
 		else
 		{

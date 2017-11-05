@@ -58,6 +58,10 @@ public:
     {
         return 0;
     }
+    virtual int send_client_iobusy_msg(bool isBusy)
+    {
+        return 0;
+    }
 public:
     void free_handle();
 };

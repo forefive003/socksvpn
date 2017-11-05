@@ -43,23 +43,22 @@ void CLocalServerPool::status_check()
 		if (m_conns_array[ii].connObj == NULL)
 		{
 			CLocalServer *localSrv = new CLocalServer(g_relay_ip, g_relay_port);
-	        if(0 != localSrv->init())
-	        {
-	        	delete localSrv;
-	        }
-	        else
-	        {
-	        	int index = this->add_conn_obj((CNetRecv*)localSrv);
-	        	if (-1 == index)
-	        	{
-	        		_LOG_ERROR("fail to add new conn obj, index %d", ii);
-	        		delete localSrv;
-	        	}
-	        	else
-	        	{
-	        		localSrv->set_self_pool_index(index);
-	        	}
-	        }
+        	int index = this->add_conn_obj((CNetRecv*)localSrv);
+        	if (-1 == index)
+        	{
+        		_LOG_ERROR("fail to add new conn obj, index %d", ii);
+        		delete localSrv;
+        	}
+        	else
+        	{
+        		/*如果先init,在设置线程索引,会导致assert异常*/        		
+        		localSrv->set_self_pool_index(index);
+		        if(0 != localSrv->init())
+		        {
+		        	delete localSrv;
+		        	this->del_conn_obj(index);
+		        }
+        	}
 		}
 		else
 		{

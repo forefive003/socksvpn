@@ -330,7 +330,7 @@ int CRemoteServer::pdu_handle(char *pdu_buf, int pdu_len)
                 pConn->get_client_ipaddr(), pConn->get_client_port(),
                 pConn->get_client_inner_ipaddr(), pConn->get_client_inner_port(),
                 pConn->get_client_fd());
-            pConn->m_remote->free();
+            pConn->free_remote();
         }
         else
         {

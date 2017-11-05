@@ -50,7 +50,8 @@ private:
 	int socks_parse_connect(char *buf, int buf_len);
 
 	int recv_handle(char *buf, int buf_len);
-
+	int send_post_handle();
+	
 public:   
 	void set_real_server(uint32_t real_serv, uint16_t real_port);
 	void get_real_server(uint32_t *real_serv, uint16_t *real_port);
@@ -67,10 +68,7 @@ public:
         /*nothing to send, will close client in free_handle*/
         return 0;
     }
-	int send_data_msg(char *buf, int buf_len)
-	{
-		return send_data(buf, buf_len);
-	}
+	int send_data_msg(char *buf, int buf_len);
 
 private:
 	int m_socks_proto_version; /*4 or 5*/

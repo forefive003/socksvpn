@@ -21,6 +21,7 @@ CBaseConnection::CBaseConnection()
     m_send_client_bytes = 0;
     m_send_remote_bytes = 0;
 
+    m_is_client_sendq_full = false;
     m_is_client_busy = false;
     m_is_remote_busy = false;
 
@@ -38,6 +39,12 @@ CBaseConnection::CBaseConnection()
     MUTEX_SETUP(m_remote_lock);
 #endif
     
+    m_is_client_sendq_full = false;
+    m_is_client_busy = false;
+    m_is_remote_busy = false;
+    m_is_client_pause_read = false;
+    m_is_remote_pause_read = false;
+
     m_refcnt = 0;
     _LOG_DEBUG("construct base connection");
 }
@@ -229,6 +236,16 @@ void CBaseConnection::notify_client_close()
     if (NULL != m_remote)
     {
         m_remote->send_client_close_msg();
+    }
+    MUTEX_UNLOCK(m_remote_lock);
+}
+
+void CBaseConnection::notify_client_iobusy(bool isBusy)
+{
+    MUTEX_LOCK(m_remote_lock);
+    if (NULL != m_remote)
+    {
+        m_remote->send_client_iobusy_msg(isBusy);
     }
     MUTEX_UNLOCK(m_remote_lock);
 }

@@ -379,6 +379,42 @@ int CClientNet::msg_data_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_
     return ret;
 }
 
+int CClientNet::msg_client_iobusy_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_len)
+{
+    this->m_recv_client_iobusy_cnt++;
+
+    CConnection *pConn = (CConnection*)g_ConnMgr->get_conn_by_client(m_ipaddr, m_port, 
+                                        c2rhdr->client_ip, c2rhdr->client_port);
+    if (NULL == pConn)
+    {
+        _LOG_WARN("failed to find connection for client 0x%x/%u/0x%x/%u, when recv client iobusy", 
+            m_ipaddr, m_port,
+            c2rhdr->client_ip, c2rhdr->client_port);
+        return -1;
+    }  
+
+    pConn->notify_client_iobusy(true);
+    pConn->dec_ref();
+    return 0;
+}
+int CClientNet::msg_client_ioresume_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_len)
+{
+    this->m_recv_client_iobusy_cnt++;
+
+    CConnection *pConn = (CConnection*)g_ConnMgr->get_conn_by_client(m_ipaddr, m_port, 
+                                        c2rhdr->client_ip, c2rhdr->client_port);
+    if (NULL == pConn)
+    {
+        _LOG_WARN("failed to find connection for client 0x%x/%u/0x%x/%u, when recv client ioresume", 
+            m_ipaddr, m_port,
+            c2rhdr->client_ip, c2rhdr->client_port);
+        return -1;
+    }  
+
+    pConn->notify_client_iobusy(false);
+    pConn->dec_ref();
+    return 0;
+}
 int CClientNet::pdu_handle(char *pdu_buf, int pdu_len)
 {
     int ret = 0;
@@ -415,6 +451,14 @@ int CClientNet::pdu_handle(char *pdu_buf, int pdu_len)
 
         case CLIENT_CLOSED:
             ret = msg_client_closed_handle(c2rhdr, data_buf, data_len);
+            break;
+
+        case CLIENT_IO_BUSY:
+            ret = msg_client_iobusy_handle(c2rhdr, data_buf, data_len);
+            break;
+
+        case CLIENT_IO_RESUME:
+            ret = msg_client_ioresume_handle(c2rhdr, data_buf, data_len);
             break;
 
         default:

@@ -203,7 +203,7 @@ int CLocalServer::msg_request_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int 
         break;
     }
 
-    _LOG_INFO("recv new connect request from client");
+    _LOG_DEBUG("recv new connect request from client");
 
     CConnection *pConn = new CConnection();
     g_ConnMgr->add_conn(pConn);
@@ -261,6 +261,76 @@ int CLocalServer::msg_request_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int 
     return 0;
 }
 
+int CLocalServer::msg_client_ioresume_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len)
+{
+    CConnection *pConn = (CConnection*)g_ConnMgr->get_conn_by_client(r2shdr->client_pub_ip, 
+                                r2shdr->client_pub_port,
+                                r2shdr->client_inner_ip,
+                                r2shdr->client_inner_port);
+    if (NULL == pConn)
+    {
+        char client_ipstr[HOST_IP_LEN] = { 0 };
+        engine_ipv4_to_str(htonl(r2shdr->client_pub_ip), client_ipstr);
+
+        _LOG_WARN("failed to find connection for client %s/%u, inner 0x%x/%u, when recv client ioResume msg",  
+                client_ipstr, r2shdr->client_pub_port,
+                r2shdr->client_inner_ip, r2shdr->client_inner_port);
+        return -1;
+    }
+
+    _LOG_INFO("recv client ioResume msg from (0x%x/%u/0x%x/%u), remote fd %d", 
+        pConn->get_client_ipaddr(), pConn->get_client_port(),
+        pConn->get_client_inner_ipaddr(), pConn->get_client_inner_port(), pConn->get_remote_fd());
+
+    MUTEX_LOCK(pConn->m_event_lock);
+
+    pConn->set_client_iobusy(false);
+
+    if (false == pConn->is_client_congestion())
+    {
+        if (pConn->is_remote_pause_read())
+        {
+            /*register read event*/
+            MUTEX_LOCK(pConn->m_remote_lock);
+            if (pConn->m_remote != NULL)
+                pConn->m_remote->resume_read();
+            MUTEX_UNLOCK(pConn->m_remote_lock);
+
+            pConn->set_remote_pause_read(false);
+        }
+    }
+    MUTEX_UNLOCK(pConn->m_event_lock);
+
+    pConn->dec_ref();
+    return 0;
+}
+
+int CLocalServer::msg_client_iobusy_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len)
+{
+    CConnection *pConn = (CConnection*)g_ConnMgr->get_conn_by_client(r2shdr->client_pub_ip, 
+                                r2shdr->client_pub_port,
+                                r2shdr->client_inner_ip,
+                                r2shdr->client_inner_port);
+    if (NULL == pConn)
+    {
+        char client_ipstr[HOST_IP_LEN] = { 0 };
+        engine_ipv4_to_str(htonl(r2shdr->client_pub_ip), client_ipstr);
+
+        _LOG_WARN("failed to find connection for client %s/%u, inner 0x%x/%u, when recv client ioBusy msg",  
+                client_ipstr, r2shdr->client_pub_port,
+                r2shdr->client_inner_ip, r2shdr->client_inner_port);
+        return -1;
+    }
+
+    _LOG_INFO("recv client ioBusy msg from (0x%x/%u/0x%x/%u), remote fd %d", 
+        pConn->get_client_ipaddr(), pConn->get_client_port(),
+        pConn->get_client_inner_ipaddr(), pConn->get_client_inner_port(), pConn->get_remote_fd());
+
+    pConn->set_client_iobusy(true);
+    pConn->dec_ref();
+    return 0;
+}
+
 int CLocalServer::msg_client_close_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len)
 {
     CConnection *pConn = (CConnection*)g_ConnMgr->get_conn_by_client(r2shdr->client_pub_ip, 
@@ -278,9 +348,9 @@ int CLocalServer::msg_client_close_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf,
         return -1;
     }
 
-    _LOG_INFO("recv client closed msg from (0x%x/%u/0x%x/%u)", 
+    _LOG_INFO("recv client closed msg from (0x%x/%u/%d/0x%x/%u), remote fd %d", 
         pConn->get_client_ipaddr(), pConn->get_client_port(),
-        pConn->get_client_inner_ipaddr(), pConn->get_client_inner_port());
+        pConn->get_client_inner_ipaddr(), pConn->get_client_inner_port(), pConn->get_remote_fd());
 
     MUTEX_LOCK(pConn->m_remote_lock);
     if (NULL != pConn->m_client)
@@ -345,6 +415,14 @@ int CLocalServer::pdu_handle(char *pdu_buf, int pdu_len)
     data_len = pkthdr->pkt_len - sizeof(PKT_R2S_HDR_T);
     switch(r2shdr->sub_type)
     {
+        case CLIENT_IO_BUSY:
+            ret = this->msg_client_iobusy_handle(r2shdr, data_buf, data_len);
+            break;
+
+        case CLIENT_IO_RESUME:
+            ret = this->msg_client_ioresume_handle(r2shdr, data_buf, data_len);
+            break;
+
         case CLIENT_CLOSED:
             ret = this->msg_client_close_handle(r2shdr, data_buf, data_len);
             break;
@@ -445,37 +523,13 @@ void CLocalServer::free_handle()
     delete this;
 }
 
-int CLocalServer::send_pre_handle()
-{
-    #if 0
-    /*iterator all connection, and move their send node to self's*/
-    CConnection *connObj = NULL;
-
-    MUTEX_LOCK(g_ConnMgr->m_obj_lock);
-    CONN_LIST_RItr itr = g_ConnMgr->m_conn_objs.rbegin();
-    while (itr != g_ConnMgr->m_conn_objs.rend())
-    {
-        connObj = (CConnection*)*itr;
-        itr++;
-
-        MUTEX_LOCK(connObj->m_remote_lock);
-        if (NULL != connObj->m_client)
-        {
-            if(connObj->m_client->m_send_q.node_cnt() > 0)
-            {
-                this->m_send_q.queue_cat(connObj->m_client->m_send_q);
-            }
-        }
-        MUTEX_UNLOCK(connObj->m_remote_lock);        
-    }
-    MUTEX_UNLOCK(g_ConnMgr->m_obj_lock);
-    #endif
-    
-    return 0;
-}
-
 int CLocalServer::send_post_handle()
 {
+    if (false == this->is_sendq_free())
+    {
+        return 0;
+    }
+    
     /*iterator all connection, register read evt if paused*/
     CConnection *connObj = NULL;
 
@@ -487,20 +541,21 @@ int CLocalServer::send_post_handle()
         itr++;
 
         MUTEX_LOCK(connObj->m_event_lock);
-        if (connObj->is_client_busy())
+        connObj->set_client_sendq_full(false);
+        if (false == connObj->is_client_congestion())
         {
-            connObj->set_client_busy(false);
-        }
-        if (connObj->is_remote_pause_read())
-        {
-            /*register read event*/
-            MUTEX_LOCK(connObj->m_remote_lock);
-            if (connObj->m_remote != NULL)
-                connObj->m_remote->resume_read();
-            MUTEX_UNLOCK(connObj->m_remote_lock);
+            if (connObj->is_remote_pause_read())
+            {
+                /*register read event*/
+                MUTEX_LOCK(connObj->m_remote_lock);
+                if (connObj->m_remote != NULL)
+                    connObj->m_remote->resume_read();
+                MUTEX_UNLOCK(connObj->m_remote_lock);
 
-            connObj->set_remote_pause_read(false);
+                connObj->set_remote_pause_read(false);
+            }
         }
+
         MUTEX_UNLOCK(connObj->m_event_lock);
     }
     MUTEX_UNLOCK(g_ConnMgr->m_obj_lock);

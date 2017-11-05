@@ -34,6 +34,7 @@ private:
     }  
     
 public:
+	int send_client_iobusy_msg(bool isBusy);
     int send_client_close_msg();
     int send_client_connect_msg(char *buf, int buf_len);
     int send_data_msg(char *buf, int buf_len);

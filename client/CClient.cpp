@@ -13,6 +13,52 @@
 #include "CSyslogMgr.h"
 #include "CRemoteServerPool.h"
 
+int CClient::send_post_handle()
+{
+	if (false == this->is_sendq_free())
+    {
+        return 0;
+    }
+    
+    MUTEX_LOCK(m_owner_conn->m_event_lock);
+    m_owner_conn->set_client_sendq_full(false);
+
+    if (false == m_owner_conn->is_client_congestion())
+    {
+	    if (m_owner_conn->is_remote_pause_read())
+	    {
+	    	/*notify peer i am not busy now, please send to me again*/
+	        m_owner_conn->notify_client_iobusy(false);
+	        m_owner_conn->set_remote_pause_read(false);
+	    }
+	}
+    MUTEX_UNLOCK(m_owner_conn->m_event_lock);
+    return 0;
+}
+
+int CClient::send_data_msg(char *buf, int buf_len)
+{
+	int ret = send_data(buf, buf_len);
+	if (0 != ret)
+	{
+		return -1;
+	}
+
+	if (this->is_sendq_busy())
+    {
+        m_owner_conn->set_client_sendq_full(true);
+
+        if (false == m_owner_conn->is_remote_pause_read())
+        {
+	        /*notify peer i am busy now, don't send to me any more*/
+		    m_owner_conn->notify_client_iobusy(true);
+		    m_owner_conn->set_remote_pause_read(true);
+		}
+    }
+
+	return 0;
+}
+
 int CClient::register_req_handle(char *buf, int buf_len)
 {
 	register_req_t  *reg_req = (register_req_t*)buf;

@@ -26,17 +26,22 @@ public:
     int fwd_remote_data_msg(char *buf, int buf_len);
 
     void notify_client_close();
+    void notify_client_iobusy(bool isBusy);
     void notify_remote_close();
     void free_client();
     void free_remote();
 
-    void set_client_busy(bool is_busy)
+    void set_client_iobusy(bool is_busy)
     {
         m_is_client_busy = is_busy;
     }
-    bool is_client_busy()
+    void set_client_sendq_full(bool is_full)
     {
-        return m_is_client_busy;
+        m_is_client_sendq_full = is_full;
+    }
+    bool is_client_congestion()
+    {
+        return (m_is_client_busy || m_is_client_sendq_full);
     }
 
     void set_remote_busy(bool is_busy)
@@ -91,6 +96,7 @@ public:
     uint64_t m_send_client_bytes;
     uint64_t m_send_remote_bytes;
 
+    bool m_is_client_sendq_full;
     bool m_is_client_busy;
     bool m_is_remote_busy;
     bool m_is_client_pause_read;

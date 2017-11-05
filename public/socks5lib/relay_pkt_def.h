@@ -48,6 +48,9 @@ enum pkt_sub_type_e{
 	CLIENT_CLOSED = 11,
 	REMOTE_CLOSED = 12,
 
+	CLIENT_IO_BUSY = 13,
+	CLIENT_IO_RESUME = 14,
+	
 	PKT_SUB_TYPE_MAX
 };
 

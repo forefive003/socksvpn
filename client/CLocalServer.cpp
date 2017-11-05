@@ -29,6 +29,7 @@ int CLocalServer::accept_handle(int conn_fd, uint32_t client_ip, uint16_t client
     g_ConnMgr->add_conn(pConn);
 
     CClient *pClient = new CClient(client_ip, client_port, conn_fd, pConn);
+    pClient->set_flow_control(12, 6);
     //pClient->set_inner_info(client_ip,client_port);
 //    pClient->init_async_write_resource(socks_malloc, socks_free);
     //g_total_client_cnt++;

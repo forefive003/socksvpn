@@ -51,9 +51,9 @@ int CClient::send_remote_close_msg()
         return -1;
     }
 
-    if (localSrv->is_send_busy())
+    if (localSrv->is_sendq_busy())
     {
-        this->m_owner_conn->set_client_busy(true);
+        this->m_owner_conn->set_client_sendq_full(true);
     }
     g_localSrvPool->unlock_index(m_local_srv_index);
 
@@ -119,9 +119,9 @@ int CClient::send_connect_result(BOOL result)
         return -1;
     }
 
-    if (localSrv->is_send_busy())
+    if (localSrv->is_sendq_busy())
     {
-        this->m_owner_conn->set_client_busy(true);
+        this->m_owner_conn->set_client_sendq_full(true);
     }
 
     g_localSrvPool->unlock_index(m_local_srv_index);
@@ -169,9 +169,9 @@ int CClient::send_data_msg(char *buf, int buf_len)
         return -1;
     }
 
-    if (localSrv->is_send_busy())
+    if (localSrv->is_sendq_busy())
     {
-        this->m_owner_conn->set_client_busy(true);
+        this->m_owner_conn->set_client_sendq_full(true);
     }
 
     g_localSrvPool->unlock_index(m_local_srv_index);

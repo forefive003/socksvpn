@@ -24,7 +24,6 @@ public:
 private:
     int pdu_handle(char *pdu_buf, int pdu_len);
 
-    int send_pre_handle();
     int send_post_handle();
 
     int connect_handle(BOOL result);
@@ -41,6 +40,8 @@ public:
 private:
     int msg_request_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len);
     int msg_client_close_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len);
+    int msg_client_iobusy_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len);
+    int msg_client_ioresume_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len);
     int msg_data_handle(PKT_R2S_HDR_T *r2shdr, char *data_buf, int data_len);
 
 private:
