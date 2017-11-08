@@ -41,7 +41,7 @@ int CProcMsgServer::accept_handle(int conn_fd, uint32_t client_ip, uint16_t clie
     reg_resp_body_t reg_resp_body;
     unreg_req_body_t unreg_req_body;
 
-    _LOG_INFO(_T("recv msg, type %s"), g_comm_msg_desc[msg.type]);
+    _LOG_INFO(_T("recv %s msg from Injected Process"), g_comm_msg_desc[msg.type]);
 
     switch(msg.type)
     {

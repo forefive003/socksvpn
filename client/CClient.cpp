@@ -88,8 +88,7 @@ int CClient::register_req_handle(char *buf, int buf_len)
 	proxy_cfg_t* cfginfo = proxy_cfg_get();
 	CConnection *pConn = (CConnection *)this->m_owner_conn;
 
-    CSrvRemote *pRemote = new CSrvRemote(cfginfo->server_ip, 0, -1, pConn);
-//    pRemote->init_async_write_resource(socks_malloc, socks_free);    
+    CSrvRemote *pRemote = new CSrvRemote(cfginfo->server_ip, 0, -1, pConn);   
     pConn->attach_remote(pRemote);
     if (0 != pRemote->init())
     {
