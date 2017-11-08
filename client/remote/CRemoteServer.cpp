@@ -248,6 +248,8 @@ int CRemoteServer::auth_result_msg_handle(BOOL result)
         {
             _LOG_INFO("auth success");
     		m_is_authed = TRUE;
+            g_remoteSrvOnlineTime = util_get_cur_time();
+            
             g_syslogMgr->add_syslog(L_INFO, "register to relay server %s/%d success", m_ipstr, m_port);
         }
 	}

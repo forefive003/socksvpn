@@ -54,6 +54,8 @@ public:
 private:
 	void init_config_display();
 	void init_servers_display();
+	void SaveConfig();
+
 private:
 	HBRUSH   m_brEdit;
 	CFont	 m_cfontEdit;
@@ -93,7 +95,6 @@ public:
 	afx_msg void OnMenuAbout();
 	afx_msg void OnMenuThrd();
 
-	CEdit m_edt_alivecnt;
 	CEdit m_edt_reqcnt;
 	CEdit m_edt_replycnt;
 	CEdit m_edt_sendrate;
@@ -103,4 +104,8 @@ public:
 	afx_msg void OnUpdateMenuStop(CCmdUI *pCmdUI);
 	afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
 	afx_msg void OnMenuConns();
+	afx_msg void OnBnClickedBtnSave();
+	afx_msg void OnBnClickedBtnQuit();
+	CXPButton m_btnSave;
+	CXPButton m_btnQuit;
 };

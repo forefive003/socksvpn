@@ -16,6 +16,8 @@
 #include "CSyslogMgr.h"
 
 CRemoteServerPool *g_remoteSrvPool = NULL;
+uint64_t g_remoteSrvOnlineTime = 0;
+uint32_t g_remoteSrvOnlineCnt = 0;
 
 void CRemoteServerPool::print_statistic(FILE* pFd)
 {
@@ -34,6 +36,8 @@ void CRemoteServerPool::print_statistic(FILE* pFd)
 
 void CRemoteServerPool::status_check()
 {
+	uint32_t remoteSrvCnt = 0;
+
 	for (int ii = 0; ii < m_max_conn_cnt; ii++)
 	{
 		this->lock_index(ii);
@@ -72,6 +76,8 @@ void CRemoteServerPool::status_check()
 					{
 						rmtSrv->send_auth_quest_msg();
 					}
+
+					remoteSrvCnt++;
 				}
 				else
 				{
@@ -87,6 +93,8 @@ void CRemoteServerPool::status_check()
 
 		this->unlock_index(ii);
 	}
+
+	g_remoteSrvOnlineCnt = remoteSrvCnt;
 }
 
 void CRemoteServerPool::let_re_auth()

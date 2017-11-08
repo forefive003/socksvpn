@@ -51,4 +51,7 @@ private:
 
 extern CRemoteServerPool *g_remoteSrvPool;
 
+extern uint64_t g_remoteSrvOnlineTime;
+extern uint32_t g_remoteSrvOnlineCnt;
+
 #endif
