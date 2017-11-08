@@ -91,7 +91,7 @@ int CClientNet::send_auth_result_msg(BOOL auth_ok)
     }
 
     g_clientNetPool->unlock_index(m_self_pool_index);
-    _LOG_INFO("client(%s) send auth result msg", m_ipstr);
+    _LOG_DEBUG("client(%s) send auth result msg", m_ipstr);
     return 0;
 }
 
@@ -196,8 +196,14 @@ int CClientNet::msg_auth_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_
 {
     char username[MAX_USERNAME_LEN + 1] = {0};
     char passwd[MAX_PASSWD_LEN + 1] = {0};
+    BOOL is_client_authed = false;
 
-    if (data_buf[0] != 0x01)
+    if (data_buf[0] == 0x01)
+    {
+        is_client_authed = true;
+    }
+
+    if (data_buf[1] != 0x01)
     {
         _LOG_ERROR("data buf invalid.");
         return -1;
@@ -208,17 +214,17 @@ int CClientNet::msg_auth_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_
     m_update_time = util_get_cur_time();
 
     /*copy username*/
-    char *usr_pos = &data_buf[1];
+    char *usr_pos = &data_buf[2];
     if (data_len < (1 + 1 + usr_pos[0]))
     {
         _LOG_ERROR("data_len too less for username, %d", data_len);
         return -1;
     }
-    memcpy(username, &usr_pos[1], usr_pos[0]);
+    memcpy(username, &usr_pos[2], usr_pos[1]);
 
     /*copy passwd*/
-    char *pass_pos = &data_buf[2 + usr_pos[0]];
-    if (data_len < (1 + 1 + usr_pos[0] + 1 + pass_pos[0]))
+    char *pass_pos = &data_buf[3 + usr_pos[0]];
+    if (data_len < (1 + 1 + 1 + usr_pos[0] + 1 + pass_pos[0]))
     {
         _LOG_ERROR("data_len too less for passwd, len %d, user len %u, pass len %d", data_len, usr_pos[0], pass_pos[0]);
         return -1;
@@ -250,14 +256,24 @@ int CClientNet::msg_auth_handle(PKT_C2R_HDR_T *c2rhdr, char *data_buf, int data_
 
     /*response to client, auth success*/
     this->send_auth_result_msg(TRUE);
-    this->m_is_authed = TRUE;
-    /*set inner info*/
-    this->set_inner_info(c2rhdr->client_ip, c2rhdr->client_port);
 
-    /*add to set*/
-    g_ClientNetMgr->add_netobj(m_self_pool_index, m_ipaddr, m_inner_ipaddr);
+    if (!is_client_authed)
+    {
+        /*first time to auth*/
+        this->m_is_authed = TRUE;
+        /*set inner info*/
+        this->set_inner_info(c2rhdr->client_ip, c2rhdr->client_port);
 
-    _LOG_INFO("client(%s/%s) auth ok.", m_ipstr, m_inner_ipstr);
+        /*add to set*/
+        g_ClientNetMgr->add_netobj(m_self_pool_index, m_ipaddr, m_inner_ipaddr);
+
+        _LOG_INFO("client(%s/%s) auth ok.", m_ipstr, m_inner_ipstr);
+    }
+    else
+    {
+        _LOG_DEBUG("client(%s/%s) keepalive ok.", m_ipstr, m_inner_ipstr);
+    }
+    
     return 0;
 }
 

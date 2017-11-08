@@ -33,7 +33,7 @@ public:
     virtual ~CNetRecv();
 
 public:
-    void set_flow_control(int busy_threshold, int free_threshold);
+    void set_flow_control(unsigned int busy_threshold, unsigned int free_threshold);
 
     void set_thrd_index(int thrd_index);
     BOOL is_connected();
@@ -86,8 +86,8 @@ public:
     uint16_t m_local_port;
 
     CSocksSendQ m_send_q;
-    int m_send_q_busy_threshold;
-    int m_send_q_free_threshold;
+    unsigned int m_send_q_busy_threshold;
+    unsigned int m_send_q_free_threshold;
 
     int m_thrd_index;
 

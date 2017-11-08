@@ -134,7 +134,7 @@ void proxy_set_servers(int *srv_ip_arr, int srv_cnt)
 		g_servers_ipaddr[ii] = srv_ip_arr[ii];
 		engine_ipv4_to_str(htonl(g_servers_ipaddr[ii]), g_servers[ii]);
 
-		if (g_proxy_cfg.server_ip == g_servers_ipaddr[ii])
+		if (g_proxy_cfg.server_ip == (uint32_t)g_servers_ipaddr[ii])
 		{
 			isCfgServerOk = true;
 		}

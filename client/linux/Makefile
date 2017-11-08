@@ -51,21 +51,18 @@ LDFLAGS += -L$(PUBLIC_DIR)/curl/32/lib -lcurl
 LDFLAGS += -L$(PUBLIC_DIR)/xjson/32/lib -lxjson
 
 LDFLAGS += -L$(PUBLIC_DIR)/netpool/32/lib -lnetpool
-LDFLAGS += -L$(PUBLIC_DIR)/xutil/32/lib -lxutil
 else ifeq ($(ARCH),x64)
 CPPFLAGS += -I$(PUBLIC_DIR)/curl/64/include/
 LDFLAGS += -L$(PUBLIC_DIR)/curl/64/lib -lcurl
 LDFLAGS += -L$(PUBLIC_DIR)/xjson/64/lib -lxjson
 
 LDFLAGS += -L$(PUBLIC_DIR)/netpool/64/lib -lnetpool
-LDFLAGS += -L$(PUBLIC_DIR)/xutil/64/lib -lxutil
 else
 CPPFLAGS += -I$(PUBLIC_DIR)/curl/mips_32/include/
 LDFLAGS += -L$(PUBLIC_DIR)/curl/mips_32/lib -lcurl
 LDFLAGS += -L$(PUBLIC_DIR)/xjson/mips_32/lib -lxjson
 
 LDFLAGS += -L$(PUBLIC_DIR)/netpool/mips_32/lib -lnetpool
-LDFLAGS += -L$(PUBLIC_DIR)/xutil/mips_32/lib -lxutil
 endif
 
 ifeq ($(SUPPORT_MULTHREAD), not-support)

@@ -92,13 +92,32 @@ int CRemoteServer::build_authen_msg(char *buf)
 {
     int pos = 0;
 
+    /*bit0: is client authed
+      bit1: 0x01
+      if need auth:
+        bit 2: username len
+        bit 3: username
+        bit 3+username len: passwd len
+        bit 3+username len + 1: passwd
+      else:
+        bit 2: 0x00
+        bit 3: 0x00*/
+    if (m_is_authed)
+    {
+        buf[0] = 0x01;
+    }
+    else
+    {
+        buf[0] = 0x00;
+    }
+
 	proxy_cfg_t *cfginfo = proxy_cfg_get();
     if (cfginfo->is_auth)
     {
-        buf[0] = 0x01;
-    	buf[1] = strlen(cfginfo->username);
-    	strncpy(&buf[2], cfginfo->username, buf[1]);
-        pos += buf[1] + 2;
+        buf[1] = 0x01;
+    	buf[2] = strlen(cfginfo->username);
+    	strncpy(&buf[3], cfginfo->username, buf[2]);
+        pos += buf[2] + 2;
 
     	buf[pos] = strlen(cfginfo->passwd);
     	strncpy(&buf[pos + 1], cfginfo->passwd, buf[pos]);
@@ -106,10 +125,10 @@ int CRemoteServer::build_authen_msg(char *buf)
     }
     else
     {
-        buf[0] = 0x01;
-        buf[1] = 0x00;
+        buf[1] = 0x01;
         buf[2] = 0x00;
-        pos = 3;
+        buf[3] = 0x00;
+        pos = 4;
     }
 
     return pos;
@@ -177,7 +196,6 @@ BOOL CRemoteServer::parse_connect_result_msg(char *buf, int buf_len, int *remote
 
     return TRUE;
 }
-
 int CRemoteServer::send_auth_quest_msg()
 {
     PKT_HDR_T pkthdr;
