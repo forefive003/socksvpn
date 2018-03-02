@@ -122,12 +122,32 @@ int CClient::lan_through_connect()
 	return 0;
 }
 
-int CClient::std_socks_connect()
+int CClient::std_socks4_connect()
 {
 	proxy_cfg_t* cfginfo = proxy_cfg_get();
 	CConnection *pConn = (CConnection *)this->m_owner_conn;
 
-    CSrvRemote *pRemote = new CSrvRemote(cfginfo->server_ip, 0, -1, pConn);   
+    CSrvRemote *pRemote = new CSrvRemote(cfginfo->server_ip, cfginfo->vpn_port, -1, pConn, SOCKS_4);   
+    pConn->attach_remote(pRemote);
+    if (0 != pRemote->init())
+    {
+        pConn->detach_remote();
+        delete pRemote;
+        this->set_client_status(SOCKS_CONNECTED_FAILED);
+        return -1;
+    }
+    pRemote->set_real_server(m_real_remote_ipaddr, m_real_remote_port);
+
+    this->set_client_status(SOCKS_CONNECTING);
+	return 0;
+}
+
+int CClient::std_socks5_connect()
+{
+	proxy_cfg_t* cfginfo = proxy_cfg_get();
+	CConnection *pConn = (CConnection *)this->m_owner_conn;
+
+    CSrvRemote *pRemote = new CSrvRemote(cfginfo->server_ip, cfginfo->vpn_port, -1, pConn, SOCKS_5);   
     pConn->attach_remote(pRemote);
     if (0 != pRemote->init())
     {
@@ -137,7 +157,9 @@ int CClient::std_socks_connect()
         return -1;
     }
 
-    this->set_client_status(SOCKS_CONNECTING);
+    /*设置remote的信息*/
+	pRemote->set_real_server(0, m_real_remote_port);
+    pRemote->set_real_domain(m_remote_domain);
 	return 0;
 }
 
@@ -175,7 +197,7 @@ int CClient::register_req_handle(char *buf, int buf_len)
 	}
 	else if (PROXY_STD_SOCKS == work_mode)
 	{
-		return this->std_socks_connect();
+		return this->std_socks4_connect();
 	}
 
     return -1;
@@ -364,7 +386,9 @@ int CClient::socks_proto5_handle(char *buf, int buf_len)
 	}
 	else if (PROXY_STD_SOCKS == work_mode)
 	{
-		return this->std_socks_connect();
+		/*等hankshake之后的请求中获取域名和端口等信息*/
+		this->auth_result_handle(TRUE);
+		return 0;
 	}	
 	
 	return -1;
@@ -402,7 +426,7 @@ int CClient::socks_proto4_handle(char *buf, int buf_len)
 	}
 	else if (PROXY_STD_SOCKS == work_mode)
 	{
-		return this->std_socks_connect();
+		return this->std_socks4_connect();
 	}
 
 	return -1;
@@ -412,6 +436,7 @@ int CClient::recv_handle(char *buf, int buf_len)
 {
 	int ret = 0;
 	CConnection *pConn = (CConnection *)this->m_owner_conn;
+	proxy_cfg_t* cfginfo = proxy_cfg_get();
 
 	_LOG_DEBUG("recv from client(%s/%u/fd%d)", m_ipstr, m_port, m_fd);
 
@@ -457,13 +482,21 @@ int CClient::recv_handle(char *buf, int buf_len)
 		}
 
 		//g_total_connect_req_cnt++;
-		this->m_request_time = util_get_cur_time();
-		ret = pConn->fwd_client_connect_msg(buf, buf_len);
-		if (0 != ret)
+
+		if (PROXY_LAN_THROUGH == cfginfo->proxy_type)
 		{
-			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), send connect to remote failed", m_ipstr, m_port, 
-				m_inner_ipstr, m_inner_port, m_fd);
-			return -1;
+			this->m_request_time = util_get_cur_time();
+			ret = pConn->fwd_client_connect_msg(buf, buf_len);
+			if (0 != ret)
+			{
+				_LOG_ERROR("client(%s/%u/%s/%u/fd%d), send connect to remote failed", m_ipstr, m_port, 
+					m_inner_ipstr, m_inner_port, m_fd);
+				return -1;
+			}
+		}
+		else if (PROXY_STD_SOCKS == cfginfo->proxy_type)
+		{
+			return this->std_socks5_connect();
 		}		
 		break;
 

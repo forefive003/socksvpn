@@ -51,7 +51,8 @@ private:
 	int send_post_handle();
 	
 	int lan_through_connect();
-	int std_socks_connect();
+	int std_socks4_connect();
+	int std_socks5_connect();
 
 public:   
 	void set_real_server(uint32_t real_serv, uint16_t real_port);

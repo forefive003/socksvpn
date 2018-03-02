@@ -450,12 +450,10 @@ int proxy_cfg_init()
 		MessageBox(NULL, strTemp, "Load Config failed", MB_OK);
 		return -1;
 	}
+
 	engine_str_to_ipv4(ipstr, (uint32_t*)&g_proxy_cfg.vpn_ip);
 	g_proxy_cfg.vpn_ip = ntohl(g_proxy_cfg.vpn_ip);
 
-	/*vpn port*/
-	g_proxy_cfg.vpn_port = ::GetPrivateProfileInt(_T("Proxy_Basic"), _T("VpnPort"), 0, _T(g_proxy_cfg_dir));
-	
 	/*sock server ip*/
 	if(0 == ::GetPrivateProfileString(_T("Proxy_Basic"), _T("SockServerIp"), _T("0"), ipstr,
 								IP_DESC_LEN, _T(g_proxy_cfg_dir)))
@@ -467,6 +465,9 @@ int proxy_cfg_init()
 	engine_str_to_ipv4(ipstr, (uint32_t*)&g_proxy_cfg.server_ip);
 	g_proxy_cfg.server_ip = ntohl(g_proxy_cfg.server_ip);
 	
+	/*vpn port*/
+	g_proxy_cfg.vpn_port = ::GetPrivateProfileInt(_T("Proxy_Basic"), _T("VpnPort"), 0, _T(g_proxy_cfg_dir));
+		
 	/*local port*/
 	g_proxy_cfg.local_port = ::GetPrivateProfileInt(_T("Proxy_Basic"), _T("LocalPort"), DEF_PROXY_SRV_PORT, _T(g_proxy_cfg_dir));
 	/*sock proto*/

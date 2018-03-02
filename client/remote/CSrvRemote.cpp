@@ -33,7 +33,7 @@ int CSrvRemote::connect_handle(BOOL result)
         return 0;
     }
     
-    //g_total_remote_cnt++;
+    g_req_cnt++;
 
     if(0 != this->register_read())
     {
@@ -43,24 +43,23 @@ int CSrvRemote::connect_handle(BOOL result)
     set_remote_status(SOCKS_HANDSHAKING);
 
     proxy_cfg_t* cfginfo = proxy_cfg_get();
-    if (cfginfo->proxy_proto == SOCKS_4)
+    if (m_version == SOCKS_4)
     {
+        /*如果是socks4代理,这里已经知道了远端IP和端口,直接发送连接请求*/
         char handshake_req[9] = {0};
-        uint32_t remote_ipaddr = 0;
-        uint16_t remote_port = 0;
-        pConn->get_client_real_remote_info(&remote_ipaddr, &remote_port);
-
+        
         handshake_req[0] = 0x04;
         handshake_req[1] = 0x01;
 
-        *((uint16_t*)&handshake_req[2]) = htons(remote_port);
-        *((uint32_t*)&handshake_req[4]) = htonl(remote_ipaddr);
+        *((uint16_t*)&handshake_req[2]) = htons(m_real_remote_port);
+        *((uint32_t*)&handshake_req[4]) = htonl(m_real_remote_ipaddr);
         handshake_req[8] = 0x00;
 
         return this->send_data(handshake_req, sizeof(handshake_req));
     }
     else
     {
+        /*否则socks5,发送handshake*/
         if (cfginfo->username[0] != 0)
         {
             char handshake_req[4] = {0x05, 0x02, 0x00, 0x02};
@@ -95,6 +94,8 @@ int CSrvRemote::socks4_handshake_resp_handle(char *buf, int buf_len)
     set_remote_status(SOCKS_CONNECTED);
 	///TODO:
     pConn->client_connect_result_handle(true, 0);
+
+    g_reply_cnt++;
     return 0;
 }
 
@@ -114,33 +115,60 @@ int CSrvRemote::socks5_handshake_resp_handle(char *buf, int buf_len)
 
     if (buf[1] == 0x00)
     {
+        /*表示不需要认证,发送连接请求*/
         set_remote_status(SOCKS_CONNECTING);
 
-        /*05 01 00 01 CA 6C 16 05 00 50
-        1、05固定
-        2、01说明tcp
-        3、00固定
-        4、01说明是ip地址
-        5、CA 6C 16 05就是202.108.22.5了，百度ip
-        6、00 50端口，即为80端口*/
+        /**
+        第一种
+            05 01 00 03 13 77  65 62 2E 73 6F 75 72 63  65 66 6F 72 67 65 2E 6E  65 74 00 16
+            1、05固定
+            2、01说明是tcp
+            3、00固定
+            4、03说明后面跟着的是域名而不是ip地址，由socks5服务器进行dns解析
+            5、13前面指明了是域名，那么0x13（19字节）是域名字符长度
+            6、77 65 62 2E 73 6F 75 72 63 65 66 6F 72 67 65 2E 6E 65 74 就这19个是域名web.sourceforge.net的ascii。
+            7、00 16端口，即为22端口。
+        第二种
+            05 01 00 01 CA 6C 16 05 00 50
+            1、05固定
+            2、01说明tcp
+            3、00固定
+            4、01说明是ip地址
+            5、CA 6C 16 05就是202.108.22.5了，百度ip
+            6、00 50端口，即为80端口
+        */
 
-        char connect_req[10] = {0};
-        uint32_t remote_ipaddr = 0;
-        uint16_t remote_port = 0;
-        CConnection *pConn = (CConnection*)this->m_owner_conn;
-        pConn->get_client_real_remote_info(&remote_ipaddr, &remote_port);
+        if (m_remote_domain[0] != 0)
+        {
+            char connect_req[512] = {0};
 
-        connect_req[0] = 0x05;
-        connect_req[1] = 0x01;
-        connect_req[2] = 0x00;
-        connect_req[3] = 0x01;
-        *((uint32_t*)&connect_req[4]) = htonl(remote_ipaddr);
-        *((uint16_t*)&connect_req[8]) = htons(remote_port);
+            connect_req[0] = 0x05;
+            connect_req[1] = 0x01;
+            connect_req[2] = 0x00;
+            connect_req[3] = 0x03;
+            connect_req[4] = strlen(m_remote_domain);
+            memcpy(&connect_req[5], m_remote_domain, connect_req[4]);
+            *((uint16_t*)&connect_req[5+connect_req[4]]) = htons(m_real_remote_port);
 
-        return this->send_data(connect_req, sizeof(connect_req));
+            return this->send_data(connect_req, 5 + connect_req[4] + 2);
+        }
+        else
+        {
+            char connect_req[10] = {0};
+
+            connect_req[0] = 0x05;
+            connect_req[1] = 0x01;
+            connect_req[2] = 0x00;
+            connect_req[3] = 0x01;
+            *((uint32_t*)&connect_req[4]) = htonl(m_real_remote_ipaddr);
+            *((uint16_t*)&connect_req[8]) = htons(m_real_remote_port);
+
+            return this->send_data(connect_req, sizeof(connect_req));
+        }
     }
     else if (buf[1] == 0x02)
     {
+        /*需要认证,发送认证消息*/
         set_remote_status(SOCKS_AUTHING);
 
 		proxy_cfg_t* cfginfo = proxy_cfg_get();
@@ -177,29 +205,56 @@ int CSrvRemote::socks5_auth_resp_handle(char *buf, int buf_len)
     }
 
     set_remote_status(SOCKS_CONNECTING);
-
-    /*05 01 00 01 CA 6C 16 05 00 50
-    1、05固定
-    2、01说明tcp
-    3、00固定
-    4、01说明是ip地址
-    5、CA 6C 16 05就是202.108.22.5了，百度ip
-    6、00 50端口，即为80端口*/
-
-    char connect_req[10] = {0};
-    uint32_t remote_ipaddr = 0;
-    uint16_t remote_port = 0;
-    CConnection *pConn = (CConnection*)this->m_owner_conn;
-    pConn->get_client_real_remote_info(&remote_ipaddr, &remote_port);
     
-    connect_req[0] = 0x05;
-    connect_req[1] = 0x01;
-    connect_req[2] = 0x00;
-    connect_req[3] = 0x01;
-    *((uint32_t*)&connect_req[4]) = htonl(remote_ipaddr);
-    *((uint16_t*)&connect_req[8]) = htons(remote_port);
+    /**
+    第一种
+        05 01 00 03 13 77  65 62 2E 73 6F 75 72 63  65 66 6F 72 67 65 2E 6E  65 74 00 16
+        1、05固定
+        2、01说明是tcp
+        3、00固定
+        4、03说明后面跟着的是域名而不是ip地址，由socks5服务器进行dns解析
+        5、13前面指明了是域名，那么0x13（19字节）是域名字符长度
+        6、77 65 62 2E 73 6F 75 72 63 65 66 6F 72 67 65 2E 6E 65 74 就这19个是域名web.sourceforge.net的ascii。
+        7、00 16端口，即为22端口。
+    第二种
+        05 01 00 01 CA 6C 16 05 00 50
+        1、05固定
+        2、01说明tcp
+        3、00固定
+        4、01说明是ip地址
+        5、CA 6C 16 05就是202.108.22.5了，百度ip
+        6、00 50端口，即为80端口
+    */
 
-    return this->send_data(connect_req, sizeof(connect_req));
+    if (m_remote_domain[0] != 0)
+    {
+        char connect_req[512] = {0};
+
+        connect_req[0] = 0x05;
+        connect_req[1] = 0x01;
+        connect_req[2] = 0x00;
+        connect_req[3] = 0x03;
+        connect_req[4] = strlen(m_remote_domain);
+        memcpy(&connect_req[5], m_remote_domain, connect_req[4]);
+        *((uint16_t*)&connect_req[5+connect_req[4]]) = htons(m_real_remote_port);
+
+        return this->send_data(connect_req, 5 + connect_req[4] + 2);
+    }
+    else
+    {
+        char connect_req[10] = {0};
+
+        connect_req[0] = 0x05;
+        connect_req[1] = 0x01;
+        connect_req[2] = 0x00;
+        connect_req[3] = 0x01;
+        *((uint32_t*)&connect_req[4]) = htonl(m_real_remote_ipaddr);
+        *((uint16_t*)&connect_req[8]) = htons(m_real_remote_port);
+
+        return this->send_data(connect_req, sizeof(connect_req));
+    }
+
+    return -1;
 }
 
 int CSrvRemote::socks5_connect_resp_handle(char *buf, int buf_len)
@@ -221,9 +276,10 @@ int CSrvRemote::socks5_connect_resp_handle(char *buf, int buf_len)
     CConnection *pConn = (CConnection*)this->m_owner_conn;
 	///TODO
     pConn->client_connect_result_handle(true, 0);
+
+    g_reply_cnt++;
     return 0;
 }
-
 
 int CSrvRemote::recv_handle(char *buf, int buf_len)
 {
@@ -232,14 +288,12 @@ int CSrvRemote::recv_handle(char *buf, int buf_len)
 
     _LOG_DEBUG("recv from remote(%s/%u/fd%d)", m_ipstr, m_port, m_fd);
 
-    proxy_cfg_t* cfginfo = proxy_cfg_get();
-
     switch(this->m_status)
     {
     case SOCKS_INIT:
         break;
     case SOCKS_HANDSHAKING:
-        if (cfginfo->proxy_proto == SOCKS_4)
+        if (m_version == SOCKS_4)
         {
             if (0 != this->socks4_handshake_resp_handle(buf, buf_len))
             {
@@ -247,7 +301,7 @@ int CSrvRemote::recv_handle(char *buf, int buf_len)
                 return -1;
             }
         }
-        else if (cfginfo->proxy_proto == SOCKS_5)
+        else if (m_version == SOCKS_5)
         {
             if (0 != this->socks5_handshake_resp_handle(buf, buf_len))
             {
