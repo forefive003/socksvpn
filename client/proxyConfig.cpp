@@ -409,9 +409,9 @@ int proxy_cfg_save()
 	return 0;
 }
 
-bool proxy_cfg_is_vpn_type()
+int proxy_cfg_get_work_type()
 {
-	return g_proxy_cfg.proxy_type == PROXY_LAN_THROUGH;
+	return g_proxy_cfg.proxy_type;
 }
 
 int proxy_cfg_init()

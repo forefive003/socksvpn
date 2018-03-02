@@ -67,7 +67,7 @@ int proxy_cfg_get_proto_type(const char* desc);
 
 proxy_cfg_t* proxy_cfg_get();
 int proxy_cfg_set(proxy_cfg_t *config);
-bool proxy_cfg_is_vpn_type();
+int proxy_cfg_get_work_type();
 
 int proxy_cfg_add_proc(char *exe_name);
 void proxy_cfg_del_proc(char *exe_name);
