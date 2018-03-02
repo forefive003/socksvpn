@@ -24,9 +24,7 @@ class CClient : public CBaseClient
 {
 public:
 	CClient(uint32_t ipaddr, uint16_t port, int fd, CBaseConnection *owner) : CBaseClient(ipaddr, port, fd, owner)
-    {
-    	m_is_standard_socks = FALSE;
-    	
+    {   	
         m_status = SOCKS_INIT;
         m_proc_id = 0;
 
@@ -52,6 +50,9 @@ private:
 	int recv_handle(char *buf, int buf_len);
 	int send_post_handle();
 	
+	int lan_through_connect();
+	int std_socks_connect();
+
 public:   
 	void set_real_server(uint32_t real_serv, uint16_t real_port);
 	void get_real_server(uint32_t *real_serv, uint16_t *real_port);
@@ -71,12 +72,12 @@ public:
 	int send_data_msg(char *buf, int buf_len);
 
 private:
-	int m_socks_proto_version; /*4 or 5*/
-
+	
 public:
+	int m_socks_proto_version; /*4 or 5(标准socks客户端), or 0xff(injected client)*/
+
 	SOCKS_STATUS_E m_status;
 	uint64_t m_proc_id;
-	BOOL m_is_standard_socks; /*是否来自标准的socks客户端*/
 
 	uint64_t m_request_time;
 

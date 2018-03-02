@@ -59,6 +59,88 @@ int CClient::send_data_msg(char *buf, int buf_len)
 	return 0;
 }
 
+int CClient::lan_through_connect()
+{
+	/*添加一个远程连接*/
+	int active_srv_index = g_remoteSrvPool->get_active_conn_obj();
+	if (-1 != active_srv_index)
+	{
+		proxy_cfg_t* cfginfo = proxy_cfg_get();
+		CConnection *pConn = (CConnection *)this->m_owner_conn;
+		CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn, active_srv_index);
+        pConn->attach_remote(pRemote);
+
+		if (0 != pRemote->init())
+		{
+			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), remote init failed", m_ipstr, m_port, 
+				m_inner_ipstr, m_inner_port, m_fd);
+			pConn->detach_remote();
+		    delete pRemote;
+		    return -1;
+		}
+
+		this->auth_result_handle(TRUE);
+
+		/*05 01 00 01 CA 6C 16 05 00 50
+        1、05固定
+        2、01说明tcp
+        3、00固定
+        4、01说明是ip地址
+        5、CA 6C 16 05就是202.108.22.5了，百度ip
+        6、00 50端口，即为80端口*/
+		int remote_ipaddr = this->m_real_remote_ipaddr;
+		uint16_t remote_dstport = this->m_real_remote_port;
+				
+		remote_ipaddr = htonl(remote_ipaddr);
+		remote_dstport = htons(remote_dstport);
+
+		/*00 5A port ipaddr*/
+		char buf[10] = {0};
+		buf[0] = 0x05;
+		buf[1] = 0x01;
+		buf[2] = 0x00;
+		buf[3] = 0x01;
+		memcpy(&buf[4], &remote_ipaddr, 4);
+		memcpy(&buf[8], &remote_dstport, 2);		
+
+		//g_total_connect_req_cnt++;
+		this->m_request_time = util_get_cur_time();
+		if (0 != pConn->fwd_client_connect_msg(buf, 10))
+		{
+			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), send connect to remote failed", m_ipstr, m_port, 
+				m_inner_ipstr, m_inner_port, m_fd);
+			return -1;
+		}
+	}
+	else
+	{
+		_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for no authed remote server", m_ipstr, m_port, 
+			m_inner_ipstr, m_inner_port, m_fd);
+		this->auth_result_handle(FALSE);
+	}
+
+	return 0;
+}
+
+int CClient::std_socks_connect()
+{
+	proxy_cfg_t* cfginfo = proxy_cfg_get();
+	CConnection *pConn = (CConnection *)this->m_owner_conn;
+
+    CSrvRemote *pRemote = new CSrvRemote(cfginfo->server_ip, 0, -1, pConn);   
+    pConn->attach_remote(pRemote);
+    if (0 != pRemote->init())
+    {
+        pConn->detach_remote();
+        delete pRemote;
+        this->set_client_status(SOCKS_CONNECTED_FAILED);
+        return -1;
+    }
+
+    this->set_client_status(SOCKS_CONNECTING);
+	return 0;
+}
+
 int CClient::register_req_handle(char *buf, int buf_len)
 {
 	register_req_t  *reg_req = (register_req_t*)buf;
@@ -82,23 +164,21 @@ int CClient::register_req_handle(char *buf, int buf_len)
 		reg_req->remote_ipaddr, reg_req->remote_port);
 
 	this->m_proc_id = reg_req->proc_id;
-	this->set_client_status(SOCKS_CONNECTING);
+	this->m_socks_proto_version = 0xff;
 	this->set_real_server(reg_req->remote_ipaddr, reg_req->remote_port);
+	this->set_client_status(SOCKS_AUTHING);
 
-	proxy_cfg_t* cfginfo = proxy_cfg_get();
-	CConnection *pConn = (CConnection *)this->m_owner_conn;
+	int work_mode = proxy_cfg_get_work_type();
+	if (PROXY_LAN_THROUGH == work_mode)
+	{
+		return this->lan_through_connect();
+	}
+	else if (PROXY_STD_SOCKS == work_mode)
+	{
+		return this->std_socks_connect();
+	}
 
-    CSrvRemote *pRemote = new CSrvRemote(cfginfo->server_ip, 0, -1, pConn);   
-    pConn->attach_remote(pRemote);
-    if (0 != pRemote->init())
-    {
-        pConn->detach_remote();
-        delete pRemote;
-        this->set_client_status(SOCKS_CONNECTED_FAILED);
-        return -1;
-    }
-
-    return 0;
+    return -1;
 }
 
 int CClient::socks_parse_handshake(char *buf, int buf_len)
@@ -250,33 +330,44 @@ int CClient::socks_proto5_handle(char *buf, int buf_len)
 	this->set_client_status(SOCKS_AUTHING);
 	this->m_socks_proto_version = 5;
 
-	/*添加一个远程连接*/
-	int active_srv_index = g_remoteSrvPool->get_active_conn_obj();
-	if (-1 != active_srv_index)
+	int work_mode = proxy_cfg_get_work_type();
+	if (PROXY_LAN_THROUGH == work_mode)
 	{
-		proxy_cfg_t* cfginfo = proxy_cfg_get();
-		CConnection *pConn = (CConnection *)this->m_owner_conn;
-		CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn, active_srv_index);
-        pConn->attach_remote(pRemote);
+		/*SOCKS5有自己的connect消息,不使用lan_through_connect函数*/
 
-		if (0 != pRemote->init())
+		/*添加一个远程连接*/
+		int active_srv_index = g_remoteSrvPool->get_active_conn_obj();
+		if (-1 != active_srv_index)
 		{
-			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), remote init failed", m_ipstr, m_port, 
-				m_inner_ipstr, m_inner_port, m_fd);
-			pConn->detach_remote();
-		    delete pRemote;
-		    return -1;
+			proxy_cfg_t* cfginfo = proxy_cfg_get();
+			CConnection *pConn = (CConnection *)this->m_owner_conn;
+			CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn, active_srv_index);
+	        pConn->attach_remote(pRemote);
+
+			if (0 != pRemote->init())
+			{
+				_LOG_ERROR("client(%s/%u/%s/%u/fd%d), remote init failed", m_ipstr, m_port, 
+					m_inner_ipstr, m_inner_port, m_fd);
+				pConn->detach_remote();
+			    delete pRemote;
+			    return -1;
+			}
+			
+			this->auth_result_handle(TRUE);
 		}
-		
-		this->auth_result_handle(TRUE);
+		else
+		{
+			_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for no authed remote server", m_ipstr, m_port, 
+				m_inner_ipstr, m_inner_port, m_fd);
+			this->auth_result_handle(FALSE);
+		}
 	}
-	else
+	else if (PROXY_STD_SOCKS == work_mode)
 	{
-		_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for no authed remote server", m_ipstr, m_port, 
-			m_inner_ipstr, m_inner_port, m_fd);
-		this->auth_result_handle(FALSE);
-	}
-	return 0;
+		return this->std_socks_connect();
+	}	
+	
+	return -1;
 }
 
 int CClient::socks_proto4_handle(char *buf, int buf_len)
@@ -304,63 +395,17 @@ int CClient::socks_proto4_handle(char *buf, int buf_len)
 	this->set_client_status(SOCKS_AUTHING);
 	this->m_socks_proto_version = 4;
 
-	/*添加一个远程连接*/
-	int active_srv_index = g_remoteSrvPool->get_active_conn_obj();
-	if (-1 != active_srv_index)
+	int work_mode = proxy_cfg_get_work_type();
+	if (PROXY_LAN_THROUGH == work_mode)
 	{
-		proxy_cfg_t* cfginfo = proxy_cfg_get();
-		CConnection *pConn = (CConnection *)this->m_owner_conn;
-		CVpnRemote *pRemote = new CVpnRemote(cfginfo->server_ip, 0, -1, pConn, active_srv_index);
-        pConn->attach_remote(pRemote);
-
-		if (0 != pRemote->init())
-		{
-			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), remote init failed", m_ipstr, m_port, 
-				m_inner_ipstr, m_inner_port, m_fd);
-			pConn->detach_remote();
-		    delete pRemote;
-		    return -1;
-		}
-
-		this->auth_result_handle(TRUE);
-
-		/*05 01 00 01 CA 6C 16 05 00 50
-        1、05固定
-        2、01说明tcp
-        3、00固定
-        4、01说明是ip地址
-        5、CA 6C 16 05就是202.108.22.5了，百度ip
-        6、00 50端口，即为80端口*/
-		remote_ipaddr = this->m_real_remote_ipaddr;
-		remote_dstport = this->m_real_remote_port;		
-		remote_ipaddr = htonl(remote_ipaddr);
-		remote_dstport = htons(remote_dstport);
-
-		/*00 5A port ipaddr*/
-		char buf[10] = {0};
-		buf[0] = 0x05;
-		buf[1] = 0x01;
-		buf[2] = 0x00;
-		buf[3] = 0x01;
-		memcpy(&buf[4], &remote_ipaddr, 4);
-		memcpy(&buf[8], &remote_dstport, 2);		
-
-		//g_total_connect_req_cnt++;
-		this->m_request_time = util_get_cur_time();
-		if (0 != pConn->fwd_client_connect_msg(buf, 10))
-		{
-			_LOG_ERROR("client(%s/%u/%s/%u/fd%d), send connect to remote failed", m_ipstr, m_port, 
-				m_inner_ipstr, m_inner_port, m_fd);
-			return -1;
-		}
+		return this->lan_through_connect();
 	}
-	else
+	else if (PROXY_STD_SOCKS == work_mode)
 	{
-		_LOG_WARN("clost client(%s/%u/%s/%u/fd%d), for no authed remote server", m_ipstr, m_port, 
-			m_inner_ipstr, m_inner_port, m_fd);
-		this->auth_result_handle(FALSE);
+		return this->std_socks_connect();
 	}
-	return 0;
+
+	return -1;
 }
 
 int CClient::recv_handle(char *buf, int buf_len)
@@ -383,16 +428,6 @@ int CClient::recv_handle(char *buf, int buf_len)
 			|| (buf[0] == 0x05 && buf[1] == 0x01)
 			|| (buf[0] == 0x05 && buf[1] == 0x02))
 		{
-			m_is_standard_socks = true;
-			
-			/*recv socks packet directly, maybe from chrome or ie*/
-			if (!proxy_cfg_is_vpn_type())
-			{
-				_LOG_ERROR("client(%s/%u/%s/%u/fd%d) recv socks auth req, but not VPN type, ignore", m_ipstr, m_port, 
-					m_inner_ipstr, m_inner_port, m_fd);
-				return -1;
-			}
-
 			if (buf[0] == 0x04)
 			{
 				return this->socks_proto4_handle(buf, buf_len);
@@ -407,9 +442,9 @@ int CClient::recv_handle(char *buf, int buf_len)
 		break;
 
 	case SOCKS_CONNECTING:
-		if (!proxy_cfg_is_vpn_type())
+		if (this->m_socks_proto_version != 5)
 		{
-			_LOG_ERROR("client(%s/%u/%s/%u/fd%d) recv socks connect req, but not VPN type, ignore", m_ipstr, m_port, 
+			_LOG_ERROR("client(%s/%u/%s/%u/fd%d) recv socks connect req, but socks5 client, ignore", m_ipstr, m_port, 
 				m_inner_ipstr, m_inner_port, m_fd);
 			return -1;
 		}
@@ -547,46 +582,7 @@ void CClient::set_client_status(SOCKS_STATUS_E status)
 		m_inner_ipstr, m_inner_port,
 		m_fd, g_socks_status_desc[m_status]);
 
-	if (proxy_cfg_is_vpn_type())
-	{
-		if (m_status == SOCKS_CONNECTED)
-		{
-			if (this->m_socks_proto_version == 4)
-			{
-				/*socks4*/
-				uint32_t remote_ipaddr = this->m_real_remote_ipaddr;
-				uint16_t remote_dstport = this->m_real_remote_port;
-
-				/*2-3为端口*/
-			    remote_dstport = htons(remote_dstport);
-			    /*4-7为ip地址*/
-			    remote_ipaddr = htonl(remote_ipaddr);
-
-				/*00 5A port ipaddr*/
-				char resp_buf[8] = { 0 };
-				resp_buf[0] = 0x00;
-				resp_buf[1] = 0x5A;
-				memcpy(&resp_buf[2], &remote_dstport, 2);
-				memcpy(&resp_buf[4], &remote_ipaddr, 4);
-				if (0 != this->send_data_msg(resp_buf, 8))
-				{
-					_LOG_ERROR("send failed, handshake failed.");
-					this->free();
-				}
-			}
-			else
-			{
-				/*socks5*/
-				char resp_buf[10] = {0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-				if (0 != this->send_data_msg(resp_buf, sizeof(resp_buf)))
-				{
-					_LOG_ERROR("send failed, handshake failed.");
-					this->free();
-				}
-			}
-		}
-	}
-	else
+	if (this->m_socks_proto_version == 0xff)
 	{
 		if (m_status == SOCKS_CONNECTED)
 		{
@@ -601,6 +597,45 @@ void CClient::set_client_status(SOCKS_STATUS_E status)
 			reg_resp.result = false;
 
 			this->send_data((char*)&reg_resp, sizeof(reg_resp));
+		}
+	}
+	else if (this->m_socks_proto_version == 4)
+	{
+		if (m_status == SOCKS_CONNECTED)
+		{
+			/*socks4*/
+			uint32_t remote_ipaddr = this->m_real_remote_ipaddr;
+			uint16_t remote_dstport = this->m_real_remote_port;
+
+			/*2-3为端口*/
+		    remote_dstport = htons(remote_dstport);
+		    /*4-7为ip地址*/
+		    remote_ipaddr = htonl(remote_ipaddr);
+
+			/*00 5A port ipaddr*/
+			char resp_buf[8] = { 0 };
+			resp_buf[0] = 0x00;
+			resp_buf[1] = 0x5A;
+			memcpy(&resp_buf[2], &remote_dstport, 2);
+			memcpy(&resp_buf[4], &remote_ipaddr, 4);
+			if (0 != this->send_data_msg(resp_buf, 8))
+			{
+				_LOG_ERROR("send failed, handshake failed.");
+				this->free();
+			}
+		}
+	}
+	else if (this->m_socks_proto_version == 5)
+	{
+		if (m_status == SOCKS_CONNECTED)
+		{
+			/*socks5*/
+			char resp_buf[10] = {0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+			if (0 != this->send_data_msg(resp_buf, sizeof(resp_buf)))
+			{
+				_LOG_ERROR("send failed, handshake failed.");
+				this->free();
+			}
 		}
 	}
 }
