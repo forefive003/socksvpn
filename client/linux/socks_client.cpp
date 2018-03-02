@@ -308,7 +308,7 @@ int main(int argc, char **argv)
 {
 	proxy_cfg_t proxy_cfg;
 	memset(&proxy_cfg, 0, sizeof(proxy_cfg));
-	proxy_cfg.proxy_type = PROXY_VPN;
+	proxy_cfg.proxy_type = PROXY_LAN_THROUGH;
 	proxy_cfg.proxy_proto = SOCKS_5;
 	proxy_cfg.local_port = DEF_CLIENT_PORT;
     proxy_cfg.vpn_port = DEF_RELAY_CLI_PORT;

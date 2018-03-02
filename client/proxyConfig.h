@@ -27,8 +27,8 @@ typedef enum
 enum
 {
 	PROXY_TYPE_INVALID = 0,
-	PROXY_VPN,
-	PROXY_SERVER,
+	PROXY_LAN_THROUGH,
+	PROXY_STD_SOCKS,
 };
 
 enum

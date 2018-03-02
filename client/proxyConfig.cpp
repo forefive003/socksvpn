@@ -60,8 +60,8 @@ const char* g_proxy_cfg_proto_desc[] = {
 };
 const char* g_proxy_cfg_type_desc[] = {
 	"Invalid Mode",
-	"VPN Server Mode",
-	"Proxy Server Mode"
+	"Lan Through Mode",
+	"Standard Socks Mode"
 };
 const char* g_proxy_cfg_encry_type_desc[] = {
 	"Invalid",
@@ -72,13 +72,13 @@ const char* g_proxy_cfg_encry_type_desc[] = {
 
 int proxy_cfg_get_type(const char* desc)
 {
-	if (strncmp(desc, g_proxy_cfg_type_desc[PROXY_VPN], strlen(g_proxy_cfg_type_desc[PROXY_VPN])) == 0)
+	if (strncmp(desc, g_proxy_cfg_type_desc[PROXY_LAN_THROUGH], strlen(g_proxy_cfg_type_desc[PROXY_LAN_THROUGH])) == 0)
 	{
-		return PROXY_VPN;
+		return PROXY_LAN_THROUGH;
 	}
-	else if (strncmp(desc, g_proxy_cfg_type_desc[PROXY_SERVER], strlen(g_proxy_cfg_type_desc[PROXY_SERVER])) == 0)
+	else if (strncmp(desc, g_proxy_cfg_type_desc[PROXY_STD_SOCKS], strlen(g_proxy_cfg_type_desc[PROXY_STD_SOCKS])) == 0)
 	{
-		return PROXY_SERVER;
+		return PROXY_STD_SOCKS;
 	}
 
 	return -1;
@@ -411,7 +411,7 @@ int proxy_cfg_save()
 
 bool proxy_cfg_is_vpn_type()
 {
-	return g_proxy_cfg.proxy_type == PROXY_VPN;
+	return g_proxy_cfg.proxy_type == PROXY_LAN_THROUGH;
 }
 
 int proxy_cfg_init()
